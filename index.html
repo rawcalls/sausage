@@ -98,6 +98,19 @@
         .delete-tab:hover {
             background-color: #cc0000;
         }
+        .clear-button {
+            padding: 8px 16px;
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .clear-button:hover {
+            background-color: #e68900;
+        }
     </style>
 </head>
 <body>
@@ -243,17 +256,17 @@
                 versions.push({
                     batchSize: 5,
                     ingredients: {
-                        groundBeefChuck: { percentage: 75 },
-                        groundPorkButt: { percentage: 25 },
-                        salt: { percentage: 2 },
-                        dextrose: { percentage: 0.7 },
-                        picklingSpice: { percentage: 0.25 },
-                        blackPepper: { percentage: 0.25 },
-                        garlic: { percentage: 0.5 },
-                        coriander: { percentage: 0.25 },
-                        mustardSeed: { percentage: 0.3 },
-                        sodiumErythorbate: { percentage: 0.05 },
-                        cure1: { percentage: 0.25 }
+                        groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75 },
+                        groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25 },
+                        salt: { name: "Salt", percentage: 2 },
+                        dextrose: { name: "Dextrose", percentage: 0.7 },
+                        picklingSpice: { name: "Pickling Spice", percentage: 0.25 },
+                        blackPepper: { name: "Black Pepper", percentage: 0.25 },
+                        garlic: { name: "Fresh Garlic, minced", percentage: 0.5 },
+                        coriander: { name: "Coriander Seed, ground", percentage: 0.25 },
+                        mustardSeed: { name: "Mustard Seed, whole", percentage: 0.3 },
+                        sodiumErythorbate: { name: "Sodium Erythorbate", percentage: 0.05 },
+                        cure1: { name: "Cure #1", percentage: 0.25 }
                     }
                 });
             }
@@ -286,6 +299,12 @@
             addTab.textContent = '+';
             addTab.onclick = addVersion;
             tabsContainer.appendChild(addTab);
+
+            const clearButton = document.createElement('button');
+            clearButton.className = 'clear-button';
+            clearButton.textContent = 'Clear All Versions';
+            clearButton.onclick = clearVersions;
+            tabsContainer.appendChild(clearButton);
         }
 
         function switchVersion(index) {
@@ -399,617 +418,35 @@
             updateIngredients();
         }
 
+        function clearVersions() {
+            if (confirm("Are you sure you want to clear all versions? This will reset the calculator to a single default version.")) {
+                versions = [{
+                    batchSize: 5,
+                    ingredients: {
+                        groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75 },
+                        groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25 },
+                        salt: { name: "Salt", percentage: 2 },
+                        dextrose: { name: "Dextrose", percentage: 0.7 },
+                        picklingSpice: { name: "Pickling Spice", percentage: 0.25 },
+                        blackPepper: { name: "Black Pepper", percentage: 0.25 },
+                        garlic: { name: "Fresh Garlic, minced", percentage: 0.5 },
+                        coriander: { name: "Coriander Seed, ground", percentage: 0.25 },
+                        mustardSeed: { name: "Mustard Seed, whole", percentage: 0.3 },
+                        sodiumErythorbate: { name: "Sodium Erythorbate", percentage: 0.05 },
+                        cure1: { name: "Cure #1", percentage: 0.25 }
+                    }
+                }];
+                currentVersion = 0;
+                saveVersions();
+                renderTabs();
+                loadVersion(currentVersion);
+                updateIngredients();
+            }
+        }
+
         function saveVersions() {
             localStorage.setItem('sausageVersions', JSON.stringify(versions));
         }
     </script>
 </body>
-</html>cd path/to/sausage_calculator
-<!-- saved from url=(0051)file:///C:/Users/rwieser/Downloads/index%20(6).html -->
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script>
-
-
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fermented Sausage Recipe Calculator</title>
-    <script src="./Grandpa&#39;s Fermented Sausage Recipe Calculator App_files/xlsx.full.min.js.download"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f4f4;
-            padding-bottom: 60px; /* Space for tab bar */
-        }
-        h1, h2, h3 {
-            color: #333;
-        }
-        h1 {
-            text-align: center;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background-color: #f9f9f9; /* Match instructions section background */
-        }
-        th, td {
-            padding: 10px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-        th {
-            background-color: #e8e8e8; /* Slightly darker than table background for contrast */
-        }
-        @media (max-width: 600px) {
-            th, td {
-                padding: 8px; /* Reduced padding for mobile */
-            }
-            table {
-                display: block;
-                overflow-x: auto; /* Horizontal scrolling on mobile if needed */
-                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-            }
-        }
-        input[type="number"] {
-            width: 80px;
-            padding: 5px;
-            margin: 5px 0;
-        }
-        button {
-            display: block;
-            width: 150px;
-            padding: 10px;
-            margin: 10px auto;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .input-section, .instructions {
-            margin-bottom: 20px;
-        }
-        .instructions {
-            background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 5px;
-        }
-        ol {
-            margin: 0;
-            padding-left: 20px;
-        }
-        .tab-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: #333;
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
-        }
-        .tab {
-            color: white;
-            padding: 10px;
-            cursor: pointer;
-            border-radius: 5px;
-            background-color: #555;
-            margin: 0 5px;
-            flex: 1;
-            text-align: center;
-            user-select: none; /* Prevent text selection on long press */
-            -webkit-user-select: none; /* For Safari */
-            touch-action: manipulation; /* Prevent default scrolling on touch */
-        }
-        .tab.active {
-            background-color: #4CAF50;
-        }
-        .tab:hover {
-            background-color: #777;
-        }
-        .tab.pressed {
-            background-color: #888; /* Visual feedback during long press or double-tap */
-        }
-        #addTab {
-            background-color: #888;
-        }
-        .note {
-            font-style: italic;
-            color: #555;
-            margin-top: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Fermented Sausage Recipe Calculator</h1>
-        <div class="input-section">
-            <label for="batchSize">Batch Size (lbs):</label>
-            <input type="number" id="batchSize" value="5" step="0.1" min="0.1">
-        </div>
-        <div class="input-section">
-            <h3>Adjust Ingredient Percentages (%)</h3>
-            <div id="percentageInputs"><div>
-                    <label for="percentage0">Ground Beef Chuck (70/30) (%):</label>
-                    <input type="number" id="percentage0" value="75" step="0.01" min="0" onchange="updatePercentage(0, this.value)">
-                </div><div>
-                    <label for="percentage1">Ground Pork Butt (80/20) (%):</label>
-                    <input type="number" id="percentage1" value="25" step="0.01" min="0" onchange="updatePercentage(1, this.value)">
-                </div><div>
-                    <label for="percentage2">Salt (%):</label>
-                    <input type="number" id="percentage2" value="2" step="0.01" min="0" onchange="updatePercentage(2, this.value)">
-                </div><div>
-                    <label for="percentage3">Dextrose (%):</label>
-                    <input type="number" id="percentage3" value="0.7" step="0.01" min="0" onchange="updatePercentage(3, this.value)">
-                </div><div>
-                    <label for="percentage4">Pickling Spice (%):</label>
-                    <input type="number" id="percentage4" value="0.25" step="0.01" min="0" onchange="updatePercentage(4, this.value)">
-                </div><div>
-                    <label for="percentage5">Black Pepper (%):</label>
-                    <input type="number" id="percentage5" value="0.25" step="0.01" min="0" onchange="updatePercentage(5, this.value)">
-                </div><div>
-                    <label for="percentage6">Fresh Garlic, minced (%):</label>
-                    <input type="number" id="percentage6" value="0.5" step="0.01" min="0" onchange="updatePercentage(6, this.value)">
-                </div><div>
-                    <label for="percentage7">Coriander Seed, ground (%):</label>
-                    <input type="number" id="percentage7" value="0.25" step="0.01" min="0" onchange="updatePercentage(7, this.value)">
-                </div><div>
-                    <label for="percentage8">Mustard Seed, whole (%):</label>
-                    <input type="number" id="percentage8" value="0.3" step="0.01" min="0" onchange="updatePercentage(8, this.value)">
-                </div><div>
-                    <label for="percentage9">Sodium Erythorbate (%):</label>
-                    <input type="number" id="percentage9" value="0.05" step="0.01" min="0" onchange="updatePercentage(9, this.value)">
-                </div><div>
-                    <label for="percentage10">Cure #1 (%):</label>
-                    <input type="number" id="percentage10" value="0.25" step="0.01" min="0" onchange="updatePercentage(10, this.value)">
-                </div><div>
-                    <label for="percentage11">T-SPX Starter Culture (%):</label>
-                    <input type="number" id="percentage11" value="0.025" step="0.01" min="0" onchange="updatePercentage(11, this.value)">
-                </div><div>
-                    <label for="percentage12">Distilled Water (%):</label>
-                    <input type="number" id="percentage12" value="10" step="0.01" min="0" onchange="updatePercentage(12, this.value)">
-                </div></div>
-            <p class="note">To rename a version tab, Shift + Click on the tab name at the bottom (on desktop), or press and hold the tab name for 1 second or double-tap it (on mobile), then enter a new name in the prompt.</p>
-        </div>
-        <button onclick="calculateIngredients()">Calculate</button>
-        <button onclick="exportToExcel()">Export to Excel</button>
-        <table id="ingredientTable">
-            <thead>
-                <tr>
-                    <th>Ingredient</th>
-                    <th>Percentage (%)</th>
-                    <th>Pounds</th>
-                    <th>Ounces</th>
-                    <th>Grams</th>
-                </tr>
-            </thead>
-            <tbody id="ingredientTableBody"><tr>
-                    <td>Ground Beef Chuck (70/30)</td>
-                    <td>75.00</td>
-                    <td>3.7500</td>
-                    <td>60.00</td>
-                    <td>1700.97</td>
-                </tr><tr>
-                    <td>Ground Pork Butt (80/20)</td>
-                    <td>25.00</td>
-                    <td>1.2500</td>
-                    <td>20.00</td>
-                    <td>566.99</td>
-                </tr><tr>
-                    <td>Salt</td>
-                    <td>2.00</td>
-                    <td>0.1000</td>
-                    <td>1.60</td>
-                    <td>45.36</td>
-                </tr><tr>
-                    <td>Dextrose</td>
-                    <td>0.70</td>
-                    <td>0.0350</td>
-                    <td>0.56</td>
-                    <td>15.88</td>
-                </tr><tr>
-                    <td>Pickling Spice</td>
-                    <td>0.25</td>
-                    <td>0.0125</td>
-                    <td>0.20</td>
-                    <td>5.67</td>
-                </tr><tr>
-                    <td>Black Pepper</td>
-                    <td>0.25</td>
-                    <td>0.0125</td>
-                    <td>0.20</td>
-                    <td>5.67</td>
-                </tr><tr>
-                    <td>Fresh Garlic, minced</td>
-                    <td>0.50</td>
-                    <td>0.0250</td>
-                    <td>0.40</td>
-                    <td>11.34</td>
-                </tr><tr>
-                    <td>Coriander Seed, ground</td>
-                    <td>0.25</td>
-                    <td>0.0125</td>
-                    <td>0.20</td>
-                    <td>5.67</td>
-                </tr><tr>
-                    <td>Mustard Seed, whole</td>
-                    <td>0.30</td>
-                    <td>0.0150</td>
-                    <td>0.24</td>
-                    <td>6.80</td>
-                </tr><tr>
-                    <td>Sodium Erythorbate</td>
-                    <td>0.05</td>
-                    <td>0.0025</td>
-                    <td>0.04</td>
-                    <td>1.13</td>
-                </tr><tr>
-                    <td>Cure #1</td>
-                    <td>0.25</td>
-                    <td>0.0125</td>
-                    <td>0.20</td>
-                    <td>5.67</td>
-                </tr><tr>
-                    <td>T-SPX Starter Culture</td>
-                    <td>0.03</td>
-                    <td>0.0013</td>
-                    <td>0.02</td>
-                    <td>0.59</td>
-                </tr><tr>
-                    <td>Distilled Water</td>
-                    <td>10.00</td>
-                    <td>0.5000</td>
-                    <td>8.00</td>
-                    <td>226.80</td>
-                </tr></tbody>
-        </table>
-        <div class="instructions">
-            <h2>Instructions</h2>
-            <ol>
-                <li><strong>Prepare Ingredients:</strong>
-                    <ul>
-                        <li>Chill ground beef chuck and pork butt to 35–40°F (2–4°C) to ensure safety and ease of mixing.</li>
-                        <li>Soak muslin casings in lukewarm water for 1–2 hours to soften, ensuring they’re pliable for stuffing and smoke penetration. Rinse well and keep damp until use.</li>
-                        <li>Dissolve T-SPX starter culture (adjusted quantity) in 1/4 cup distilled water and let sit for 10 minutes to activate.</li>
-                    </ul>
-                </li>
-                <li><strong>Mix Seasonings and Meat:</strong>
-                    <ul>
-                        <li>In a large, chilled bowl, combine ground beef chuck and pork butt (quantities as calculated).</li>
-                        <li>Add salt, dextrose, pickling spice, black pepper, minced garlic, ground coriander, whole mustard seed, sodium erythorbate, and Cure #1 (quantities as calculated). Mix thoroughly by hand or with a stand mixer for 1–2 minutes until evenly distributed.</li>
-                        <li>Add activated T-SPX slurry and remaining distilled water (adjusted quantity minus the 1/4 cup used for culture). Mix until the meat becomes sticky and cohesive (about 1–2 minutes) to ensure proper binding and culture distribution.</li>
-                    </ul>
-                </li>
-                <li><strong>Stuff Sausages:</strong>
-                    <ul>
-                        <li>Load the sausage stuffer with the meat mixture, avoiding air pockets.</li>
-                        <li>Stuff into muslin casings, forming 10–12 inch logs or as desired (muslin casings are typically larger, often 2–3 inches in diameter). Tie ends securely with butcher’s twine, ensuring a tight pack to prevent air gaps. Prick any air bubbles with a sterile pin.</li>
-                    </ul>
-                </li>
-                <li><strong>Fermentation During Cold Smoking:</strong>
-                    <ul>
-                        <li>Hang sausages in a smoker set to 75°F (24°C) with 80–85% relative humidity. Apply light, consistent smoke using hardwood (e.g., hickory or applewood) for 60 hours.</li>
-                        <li>The T-SPX culture and dextrose will ferment slowly, lowering the pH to ~5.0–5.1. Ensure good airflow to support fermentation and smoke penetration through the muslin casings.</li>
-                        <li>After 60 hours, check pH with a meter or test strips to confirm it’s near 5.0–5.1.</li>
-                    </ul>
-                </li>
-                <li><strong>Hot Smoking:</strong>
-                    <ul>
-                        <li>Gradually increase smoker temperature by 10°F per hour, starting from 75°F to 160°F (71°C), maintaining light smoke and 70–80% humidity to prevent case hardening.</li>
-                        <li>Smoke until the internal temperature reaches 148°F (64°C), typically 8–9 hours (75°F to 160°F = 85°F, at 10°F/hour). Monitor with a probe thermometer inserted through the muslin casing.</li>
-                        <li>Verify pH post-hot smoking is ~5.0. If slightly above, extend hot smoking at 148°F for 1–2 hours and recheck.</li>
-                    </ul>
-                </li>
-                <li><strong>Cooling:</strong>
-                    <ul>
-                        <li>Immediately place sausages in an ice-water bath to cool below 120°F (49°C) to stop cooking and ensure food safety. Muslin casings can be left on during cooling.</li>
-                        <li>Pat dry and let rest at room temperature for 1–2 hours to stabilize.</li>
-                    </ul>
-                </li>
-                <li><strong>Storage:</strong>
-                    <ul>
-                        <li>Remove muslin casings after cooling, or leave on if preferred for storage (they can be peeled off before consumption). Vacuum-seal or wrap tightly and refrigerate at 35–40°F (2–4°C) for up to 2 weeks or freeze for up to 6 months.</li>
-                    </ul>
-                </li>
-            </ol>
-        </div>
-    </div>
-
-    <div class="tab-bar" id="tabBar"><div class="tab active">Version 1</div><div class="tab" id="addTab">+</div></div>
-
-    <script>
-        // Define the ingredients with their default percentages
-        const defaultIngredients = [
-            { name: "Ground Beef Chuck (70/30)", percentage: 75.00 },
-            { name: "Ground Pork Butt (80/20)", percentage: 25.00 },
-            { name: "Salt", percentage: 2.00 },
-            { name: "Dextrose", percentage: 0.70 },
-            { name: "Pickling Spice", percentage: 0.25 },
-            { name: "Black Pepper", percentage: 0.25 },
-            { name: "Fresh Garlic, minced", percentage: 0.50 },
-            { name: "Coriander Seed, ground", percentage: 0.25 },
-            { name: "Mustard Seed, whole", percentage: 0.30 },
-            { name: "Sodium Erythorbate", percentage: 0.05 },
-            { name: "Cure #1", percentage: 0.25 },
-            { name: "T-SPX Starter Culture", percentage: 0.025 },
-            { name: "Distilled Water", percentage: 10.00 }
-        ];
-
-        // Store recipe versions (tabs)
-        let recipeVersions = [
-            { name: "Version 1", batchSize: 5, ingredients: JSON.parse(JSON.stringify(defaultIngredients)) }
-        ];
-        let currentTab = 0;
-
-        // Function to create percentage input fields dynamically
-        function createPercentageInputs() {
-            const percentageInputsDiv = document.getElementById("percentageInputs");
-            percentageInputsDiv.innerHTML = "";
-            recipeVersions[currentTab].ingredients.forEach((ingredient, index) => {
-                const div = document.createElement("div");
-                div.innerHTML = `
-                    <label for="percentage${index}">${ingredient.name} (%):</label>
-                    <input type="number" id="percentage${index}" value="${ingredient.percentage}" step="0.01" min="0" onchange="updatePercentage(${index}, this.value)">
-                `;
-                percentageInputsDiv.appendChild(div);
-            });
-        }
-
-        // Function to update ingredient percentage
-        function updatePercentage(index, value) {
-            recipeVersions[currentTab].ingredients[index].percentage = parseFloat(value);
-        }
-
-        // Function to calculate and update the table
-        function calculateIngredients() {
-            const batchSize = parseFloat(document.getElementById("batchSize").value);
-            recipeVersions[currentTab].batchSize = batchSize;
-            const tbody = document.getElementById("ingredientTableBody");
-            tbody.innerHTML = ""; // Clear the table body
-
-            recipeVersions[currentTab].ingredients.forEach((ingredient) => {
-                const percentage = ingredient.percentage;
-                const pounds = (batchSize * (percentage / 100)).toFixed(4);
-                const ounces = (pounds * 16).toFixed(2);
-                const grams = (pounds * 453.592).toFixed(2);
-
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${ingredient.name}</td>
-                    <td>${percentage.toFixed(2)}</td>
-                    <td>${pounds}</td>
-                    <td>${ounces}</td>
-                    <td>${grams}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // Function to add a new tab/recipe version
-        function addTab() {
-            const newVersionNum = recipeVersions.length + 1;
-            recipeVersions.push({
-                name: `Version ${newVersionNum}`,
-                batchSize: 5,
-                ingredients: JSON.parse(JSON.stringify(defaultIngredients))
-            });
-            currentTab = recipeVersions.length - 1;
-            renderTabs();
-            createPercentageInputs();
-            document.getElementById("batchSize").value = recipeVersions[currentTab].batchSize;
-            calculateIngredients();
-        }
-
-        // Function to rename a tab
-        function renameTab(tabIndex) {
-            const newName = prompt("Enter new name for this version:", recipeVersions[tabIndex].name);
-            if (newName && newName.trim() !== "") {
-                recipeVersions[tabIndex].name = newName.trim();
-                renderTabs();
-            }
-        }
-
-        // Function to switch tabs
-        function switchTab(tabIndex) {
-            currentTab = tabIndex;
-            renderTabs();
-            createPercentageInputs();
-            document.getElementById("batchSize").value = recipeVersions[currentTab].batchSize;
-            calculateIngredients();
-        }
-
-        // Function to render tabs
-        function renderTabs() {
-            const tabBar = document.getElementById("tabBar");
-            tabBar.innerHTML = "";
-            recipeVersions.forEach((version, index) => {
-                const tab = document.createElement("div");
-                tab.className = "tab" + (index === currentTab ? " active" : "");
-                tab.textContent = version.name;
-
-                // Desktop: Shift + Click to rename
-                tab.onclick = (e) => {
-                    if (e.shiftKey) { // Shift + click to rename on desktop
-                        renameTab(index);
-                    } else {
-                        switchTab(index);
-                    }
-                };
-
-                // Mobile: Long press to rename
-                let pressTimer;
-                tab.addEventListener('touchstart', (e) => {
-                    tab.classList.add('pressed'); // Visual feedback
-                    pressTimer = setTimeout(() => {
-                        e.preventDefault(); // Prevent default touch actions
-                        tab.classList.remove('pressed');
-                        renameTab(index); // Trigger rename on long press
-                    }, 800); // 800ms hold
-                });
-                tab.addEventListener('touchend', (e) => {
-                    clearTimeout(pressTimer); // Cancel rename if released early
-                    tab.classList.remove('pressed');
-                    // If not a long press, treat as a regular tap to switch tabs
-                    if (!pressTimer._canceled) {
-                        switchTab(index);
-                    }
-                });
-
-                // Mobile: Double-tap to rename
-                let lastTap = 0;
-                tab.addEventListener('touchstart', (e) => {
-                    const currentTime = new Date().getTime();
-                    const tapLength = currentTime - lastTap;
-                    if (tapLength < 300 && tapLength > 0) { // Double-tap within 300ms
-                        e.preventDefault();
-                        tab.classList.add('pressed'); // Visual feedback
-                        renameTab(index); // Trigger rename on double-tap
-                    }
-                    lastTap = currentTime;
-                });
-
-                tabBar.appendChild(tab);
-            });
-            const addTabButton = document.createElement("div");
-            addTabButton.className = "tab";
-            addTabButton.id = "addTab";
-            addTabButton.textContent = "+";
-            addTabButton.onclick = addTab;
-            tabBar.appendChild(addTabButton);
-        }
-
-        // Function to export the current table to Excel
-        function exportToExcel() {
-            const batchSize = parseFloat(document.getElementById("batchSize").value);
-            const data = [
-                ["Ingredient", "Percentage (%)", "Pounds", "Ounces", "Grams"]
-            ];
-
-            recipeVersions[currentTab].ingredients.forEach((ingredient) => {
-                const percentage = ingredient.percentage;
-                const pounds = (batchSize * (percentage / 100)).toFixed(4);
-                const ounces = (pounds * 16).toFixed(2);
-                const grams = (pounds * 453.592).toFixed(2);
-
-                data.push([
-                    ingredient.name,
-                    percentage.toFixed(2),
-                    pounds,
-                    ounces,
-                    grams
-                ]);
-            });
-
-            // Create a new workbook and worksheet
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(data);
-
-            // Apply formatting
-            const colWidths = [
-                { wch: 25 }, // Ingredient
-                { wch: 15 }, // Percentage
-                { wch: 10 }, // Pounds
-                { wch: 10 }, // Ounces
-                { wch: 10 }  // Grams
-            ];
-            ws['!cols'] = colWidths;
-
-            // Style the header row (bold and centered)
-            data[0].forEach((_, colIndex) => {
-                const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIndex });
-                if (!ws[cellRef]) ws[cellRef] = { t: 's', v: data[0][colIndex] };
-                ws[cellRef].s = {
-                    font: { bold: true },
-                    alignment: { horizontal: "center" },
-                    border: {
-                        top: { style: "thin" },
-                        bottom: { style: "thin" },
-                        left: { style: "thin" },
-                        right: { style: "thin" }
-                    }
-                };
-            });
-
-            // Add borders to all data cells
-            for (let row = 1; row < data.length; row++) {
-                for (let col = 0; col < data[row].length; col++) {
-                    const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
-                    if (!ws[cellRef]) ws[cellRef] = { t: 's', v: data[row][col] };
-                    ws[cellRef].s = {
-                        border: {
-                            top: { style: "thin" },
-                            bottom: { style: "thin" },
-                            left: { style: "thin" },
-                            right: { style: "thin" }
-                        }
-                    };
-                }
-            }
-
-            // Append the worksheet to the workbook
-            XLSX.utils.book_append_sheet(wb, ws, "Recipe");
-
-            // Export the workbook
-            XLSX.writeFile(wb, `${recipeVersions[currentTab].name}_recipe.xlsx`);
-        }
-
-        // Initialize the app
-        window.onload = function() {
-            createPercentageInputs();
-            calculateIngredients();
-            renderTabs();
-        };
-    </script>
-
-</body></html>
+</html>
