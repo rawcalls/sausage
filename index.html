@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fermented Sausage Recipe Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -167,6 +168,19 @@
             <label>Cure #1 (%):</label>
             <input type="number" id="cure1" value="0.25" step="0.01" onchange="updateIngredients()">
         </div>
+        <div class="ingredient">
+            <label>T-SPX Starter Culture (%):</label>
+            <input type="number" id="tspx" value="0.025" step="0.01" onchange="updateIngredients()">
+        </div>
+        <div class="ingredient">
+            <label>Distilled Water (%):</label>
+            <input type="number" id="distilledWater" value="10" step="0.01" onchange="updateIngredients()">
+        </div>
+    </div>
+
+    <div class="button-section" style="text-align: center; margin: 10px 0;">
+        <button onclick="updateIngredients()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">Calculate</button>
+        <button onclick="exportToExcel()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">Export to Excel</button>
     </div>
 
     <table id="ingredientTable">
@@ -183,48 +197,51 @@
     </table>
 
     <div class="directions">
-        <h2>Directions</h2>
+        <h2>Instructions</h2>
         <ol>
             <li><strong>Prepare Ingredients:</strong>
                 <ul>
-                    <li>Chill ground beef chuck and pork butt to 35–40°F (2–4°C).</li>
-                    <li>Soak muslin casings in lukewarm water for 1–2 hours to soften. Rinse well and keep damp.</li>
-                    <li>Dissolve T-SPX starter culture in 1/4 cup distilled water and let sit for 10 minutes to activate.</li>
+                    <li>Chill ground beef chuck and pork butt to 35–40°F (2–4°C) to ensure safety and ease of mixing.</li>
+                    <li>Soak muslin casings in lukewarm water for 1–2 hours to soften, ensuring they’re pliable for stuffing and smoke penetration. Rinse well and keep damp until use.</li>
+                    <li>Dissolve T-SPX starter culture (adjusted quantity) in 1/4 cup distilled water and let sit for 10 minutes to activate.</li>
                 </ul>
             </li>
             <li><strong>Mix Seasonings and Meat:</strong>
                 <ul>
-                    <li>Combine ground beef chuck and pork butt in a large, chilled bowl.</li>
-                    <li>Add salt, dextrose, pickling spice, black pepper, minced garlic, ground coriander, whole mustard seed, sodium erythorbate, and Cure #1. Mix thoroughly for 1–2 minutes.</li>
-                    <li>Add T-SPX slurry and remaining distilled water. Mix until sticky and cohesive (1–2 minutes).</li>
+                    <li>In a large, chilled bowl, combine ground beef chuck and pork butt (quantities as calculated).</li>
+                    <li>Add salt, dextrose, pickling spice, black pepper, minced garlic, ground coriander, whole mustard seed, sodium erythorbate, and Cure #1 (quantities as calculated). Mix thoroughly by hand or with a stand mixer for 1–2 minutes until evenly distributed.</li>
+                    <li>Add activated T-SPX slurry and remaining distilled water (adjusted quantity minus the 1/4 cup used for culture). Mix until the meat becomes sticky and cohesive (about 1–2 minutes) to ensure proper binding and culture distribution.</li>
                 </ul>
             </li>
             <li><strong>Stuff Sausages:</strong>
                 <ul>
-                    <li>Load the sausage stuffer with the mixture, avoiding air pockets.</li>
-                    <li>Stuff into muslin casings, forming 10–12 inch logs. Tie ends with butcher’s twine. Prick air bubbles.</li>
+                    <li>Load the sausage stuffer with the meat mixture, avoiding air pockets.</li>
+                    <li>Stuff into muslin casings, forming 10–12 inch logs or as desired (muslin casings are typically larger, often 2–3 inches in diameter). Tie ends securely with butcher’s twine, ensuring a tight pack to prevent air gaps. Prick any air bubbles with a sterile pin.</li>
                 </ul>
             </li>
             <li><strong>Fermentation During Cold Smoking:</strong>
                 <ul>
-                    <li>Hang sausages in a smoker at 75°F (24°C) with 80–85% humidity. Apply light smoke (e.g., hickory or applewood) for 72 hours.</li>
-                    <li>T-SPX and dextrose will ferment, lowering pH to ~5.0. Check pH after 72 hours.</li>
+                    <li>Hang sausages in a smoker set to 75°F (24°C) with 80–85% relative humidity. Apply light, consistent smoke using hardwood (e.g., hickory or applewood) for 60 hours.</li>
+                    <li>The T-SPX culture and dextrose will ferment slowly, lowering the pH to ~5.0–5.1. Ensure good airflow to support fermentation and smoke penetration through the muslin casings.</li>
+                    <li>After 60 hours, check pH with a meter or test strips to confirm it’s near 5.0–5.1.</li>
                 </ul>
             </li>
             <li><strong>Hot Smoking:</strong>
                 <ul>
-                    <li>Increase smoker temperature gradually to 160°F (71°C), maintaining light smoke and 70–80% humidity.</li>
-                    <li>Smoke until internal temperature reaches 148°F (64°C), about 3–5 hours. Verify pH remains ~5.0.</li>
+                    <li>Gradually increase smoker temperature by 10°F per hour, starting from 75°F to 160°F (71°C), maintaining light smoke and 70–80% humidity to prevent case hardening.</li>
+                    <li>Smoke until the internal temperature reaches 148°F (64°C), typically 8–9 hours (75°F to 160°F = 85°F, at 10°F/hour). Monitor with a probe thermometer inserted through the muslin casing.</li>
+                    <li>Verify pH post-hot smoking is ~5.0. If slightly above, extend hot smoking at 148°F for 1–2 hours and recheck.</li>
                 </ul>
             </li>
             <li><strong>Cooling:</strong>
                 <ul>
-                    <li>Place sausages in an ice-water bath to cool below 120°F (49°C). Pat dry and rest for 1–2 hours.</li>
+                    <li>Immediately place sausages in an ice-water bath to cool below 120°F (49°C) to stop cooking and ensure food safety. Muslin casings can be left on during cooling.</li>
+                    <li>Pat dry and let rest at room temperature for 1–2 hours to stabilize.</li>
                 </ul>
             </li>
             <li><strong>Storage:</strong>
                 <ul>
-                    <li>Remove muslin casings or leave on. Vacuum-seal or wrap tightly. Refrigerate at 35–40°F (2–4°C) for up to 2 weeks or freeze for 6 months.</li>
+                    <li>Remove muslin casings after cooling, or leave on if preferred for storage (they can be peeled off before consumption). Vacuum-seal or wrap tightly and refrigerate at 35–40°F (2–4°C) for up to 2 weeks or freeze for up to 6 months.</li>
                 </ul>
             </li>
         </ol>
@@ -254,6 +271,7 @@
             } else {
                 // Initialize with a default version if none exist
                 versions.push({
+                    name: `Version 1`,
                     batchSize: 5,
                     ingredients: {
                         groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75 },
@@ -266,7 +284,9 @@
                         coriander: { name: "Coriander Seed, ground", percentage: 0.25 },
                         mustardSeed: { name: "Mustard Seed, whole", percentage: 0.3 },
                         sodiumErythorbate: { name: "Sodium Erythorbate", percentage: 0.05 },
-                        cure1: { name: "Cure #1", percentage: 0.25 }
+                        cure1: { name: "Cure #1", percentage: 0.25 },
+                        tspx: { name: "T-SPX Starter Culture", percentage: 0.025 },
+                        distilledWater: { name: "Distilled Water", percentage: 10 }
                     }
                 });
             }
@@ -283,8 +303,30 @@
             versions.forEach((version, index) => {
                 const tab = document.createElement('button');
                 tab.className = 'tab' + (index === currentVersion ? ' active' : '');
-                tab.textContent = `Version ${index + 1} (${version.batchSize} lbs)`;
-                tab.onclick = () => switchVersion(index);
+                tab.textContent = `${version.name} (${version.batchSize} lbs)`;
+                
+                // Handle regular click to switch versions
+                tab.onclick = (e) => {
+                    if (e.shiftKey) {
+                        // Shift+Click for renaming (laptop)
+                        renameVersion(index);
+                    } else {
+                        // Regular click to switch version
+                        switchVersion(index);
+                    }
+                };
+
+                // Handle long press for mobile
+                let pressTimer;
+                tab.addEventListener('touchstart', (e) => {
+                    pressTimer = setTimeout(() => {
+                        e.preventDefault();
+                        renameVersion(index);
+                    }, 1000); // 1000ms for long press
+                });
+                tab.addEventListener('touchend', () => clearTimeout(pressTimer));
+                tab.addEventListener('touchcancel', () => clearTimeout(pressTimer));
+
                 tabsContainer.appendChild(tab);
 
                 const deleteButton = document.createElement('button');
@@ -307,6 +349,15 @@
             tabsContainer.appendChild(clearButton);
         }
 
+        function renameVersion(index) {
+            const newName = prompt("Enter a new name for this version:", versions[index].name);
+            if (newName && newName.trim() !== "") {
+                versions[index].name = newName.trim();
+                saveVersions();
+                renderTabs();
+            }
+        }
+
         function switchVersion(index) {
             currentVersion = index;
             loadVersion(index);
@@ -318,135 +369,4 @@
             const version = versions[index];
             document.getElementById('batchSize').value = version.batchSize;
             document.getElementById('groundBeefChuck').value = version.ingredients.groundBeefChuck.percentage;
-            document.getElementById('groundPorkButt').value = version.ingredients.groundPorkButt.percentage;
-            document.getElementById('salt').value = version.ingredients.salt.percentage;
-            document.getElementById('dextrose').value = version.ingredients.dextrose.percentage;
-            document.getElementById('picklingSpice').value = version.ingredients.picklingSpice.percentage;
-            document.getElementById('blackPepper').value = version.ingredients.blackPepper.percentage;
-            document.getElementById('garlic').value = version.ingredients.garlic.percentage;
-            document.getElementById('coriander').value = version.ingredients.coriander.percentage;
-            document.getElementById('mustardSeed').value = version.ingredients.mustardSeed.percentage;
-            document.getElementById('sodiumErythorbate').value = version.ingredients.sodiumErythorbate.percentage;
-            document.getElementById('cure1').value = version.ingredients.cure1.percentage;
-        }
-
-        function updateIngredients() {
-            const batchSize = parseFloat(document.getElementById('batchSize').value);
-            if (isNaN(batchSize) || batchSize <= 0) {
-                alert("Please enter a valid batch size greater than 0.");
-                return;
-            }
-
-            const ingredients = {
-                groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: parseFloat(document.getElementById('groundBeefChuck').value) },
-                groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: parseFloat(document.getElementById('groundPorkButt').value) },
-                salt: { name: "Salt", percentage: parseFloat(document.getElementById('salt').value) },
-                dextrose: { name: "Dextrose", percentage: parseFloat(document.getElementById('dextrose').value) },
-                picklingSpice: { name: "Pickling Spice", percentage: parseFloat(document.getElementById('picklingSpice').value) },
-                blackPepper: { name: "Black Pepper", percentage: parseFloat(document.getElementById('blackPepper').value) },
-                garlic: { name: "Fresh Garlic, minced", percentage: parseFloat(document.getElementById('garlic').value) },
-                coriander: { name: "Coriander Seed, ground", percentage: parseFloat(document.getElementById('coriander').value) },
-                mustardSeed: { name: "Mustard Seed, whole", percentage: parseFloat(document.getElementById('mustardSeed').value) },
-                sodiumErythorbate: { name: "Sodium Erythorbate", percentage: parseFloat(document.getElementById('sodiumErythorbate').value) },
-                cure1: { name: "Cure #1", percentage: parseFloat(document.getElementById('cure1').value) }
-            };
-
-            // Validate that meat percentages add up to 100%
-            const meatTotal = ingredients.groundBeefChuck.percentage + ingredients.groundPorkButt.percentage;
-            if (Math.abs(meatTotal - 100) > 0.01) {
-                alert("Ground Beef Chuck and Ground Pork Butt percentages should add up to 100%.");
-                return;
-            }
-
-            // Update the versions array
-            versions[currentVersion] = {
-                batchSize: batchSize,
-                ingredients: ingredients
-            };
-
-            // Update the ingredients table
-            const tbody = document.getElementById('ingredientBody');
-            tbody.innerHTML = ''; // Clear previous rows
-
-            Object.values(ingredients).forEach(ingredient => {
-                const percentage = ingredient.percentage;
-                const scaledAmount = (percentage / 100) * batchSize; // Calculate amount in lbs
-                const oz = scaledAmount * 16; // Convert lbs to oz
-                const grams = scaledAmount * 453.592; // Convert lbs to grams
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${ingredient.name}</td>
-                    <td>${scaledAmount.toFixed(4)}</td>
-                    <td>${oz.toFixed(1)}</td>
-                    <td>${grams.toFixed(1)}</td>
-                    <td>${percentage.toFixed(2)}%</td>
-                `;
-                tbody.appendChild(row);
-            });
-
-            saveVersions();
-            renderTabs();
-        }
-
-        function addVersion() {
-            const current = versions[currentVersion];
-            versions.push({
-                batchSize: current.batchSize,
-                ingredients: JSON.parse(JSON.stringify(current.ingredients)) // Deep copy
-            });
-            currentVersion = versions.length - 1;
-            saveVersions();
-            renderTabs();
-            loadVersion(currentVersion);
-            updateIngredients();
-        }
-
-        function deleteVersion(index) {
-            if (versions.length <= 1) {
-                alert("You must keep at least one version.");
-                return;
-            }
-
-            versions.splice(index, 1);
-            if (currentVersion >= versions.length) {
-                currentVersion = versions.length - 1;
-            }
-            saveVersions();
-            renderTabs();
-            loadVersion(currentVersion);
-            updateIngredients();
-        }
-
-        function clearVersions() {
-            if (confirm("Are you sure you want to clear all versions? This will reset the calculator to a single default version.")) {
-                versions = [{
-                    batchSize: 5,
-                    ingredients: {
-                        groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75 },
-                        groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25 },
-                        salt: { name: "Salt", percentage: 2 },
-                        dextrose: { name: "Dextrose", percentage: 0.7 },
-                        picklingSpice: { name: "Pickling Spice", percentage: 0.25 },
-                        blackPepper: { name: "Black Pepper", percentage: 0.25 },
-                        garlic: { name: "Fresh Garlic, minced", percentage: 0.5 },
-                        coriander: { name: "Coriander Seed, ground", percentage: 0.25 },
-                        mustardSeed: { name: "Mustard Seed, whole", percentage: 0.3 },
-                        sodiumErythorbate: { name: "Sodium Erythorbate", percentage: 0.05 },
-                        cure1: { name: "Cure #1", percentage: 0.25 }
-                    }
-                }];
-                currentVersion = 0;
-                saveVersions();
-                renderTabs();
-                loadVersion(currentVersion);
-                updateIngredients();
-            }
-        }
-
-        function saveVersions() {
-            localStorage.setItem('sausageVersions', JSON.stringify(versions));
-        }
-    </script>
-</body>
-</html>
+            document.getElementById('groundPorkButt').value
