@@ -518,4 +518,104 @@
             // Style the header row (bold and centered)
             data[0].forEach((_, colIndex) => {
                 const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIndex });
-                if (!ws[cellRef]) ws[cellRef] = { t: '
+                if (!ws[cellRef]) ws[cellRef] = { t: 's', v: data[0][colIndex] };
+                ws[cellRef].s = {
+                    font: { bold: true },
+                    alignment: { horizontal: "center" },
+                    border: {
+                        top: { style: "thin" },
+                        bottom: { style: "thin" },
+                        left: { style: "thin" },
+                        right: { style: "thin" }
+                    }
+                };
+            });
+
+            // Add borders to all data cells
+            for (let row = 1; row < data.length; row++) {
+                for (let col = 0; col < data[row].length; col++) {
+                    const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+                    if (!ws[cellRef]) ws[cellRef] = { t: 's', v: data[row][col] };
+                    ws[cellRef].s = {
+                        border: {
+                            top: { style: "thin" },
+                            bottom: { style: "thin" },
+                            left: { style: "thin" },
+                            right: { style: "thin" }
+                        }
+                    };
+                }
+            }
+
+            // Append the worksheet to the workbook
+            XLSX.utils.book_append_sheet(wb, ws, "Recipe");
+
+            // Export the workbook
+            XLSX.writeFile(wb, `Sausage_Recipe_${versions[currentVersion].name}.xlsx`);
+        }
+
+        function addVersion() {
+            const current = versions[currentVersion];
+            versions.push({
+                name: `Version ${versions.length + 1}`,
+                batchSize: current.batchSize,
+                ingredients: JSON.parse(JSON.stringify(current.ingredients)) // Deep copy
+            });
+            currentVersion = versions.length - 1;
+            saveVersions();
+            renderTabs();
+            loadVersion(currentVersion);
+            updateIngredients();
+        }
+
+        function deleteVersion(index) {
+            if (versions.length <= 1) {
+                alert("You must keep at least one version.");
+                return;
+            }
+
+            versions.splice(index, 1);
+            if (currentVersion >= versions.length) {
+                currentVersion = versions.length - 1;
+            }
+            saveVersions();
+            renderTabs();
+            loadVersion(currentVersion);
+            updateIngredients();
+        }
+
+        function clearVersions() {
+            if (confirm("Are you sure you want to clear all versions? This will reset the calculator to a single default version.")) {
+                versions = [{
+                    name: `Version 1`,
+                    batchSize: 5,
+                    ingredients: {
+                        groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75 },
+                        groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25 },
+                        salt: { name: "Salt", percentage: 2 },
+                        dextrose: { name: "Dextrose", percentage: 0.7 },
+                        picklingSpice: { name: "Pickling Spice", percentage: 0.25 },
+                        blackPepper: { name: "Black Pepper", percentage: 0.25 },
+                        garlic: { name: "Fresh Garlic, minced", percentage: 0.5 },
+                        coriander: { name: "Coriander Seed, ground", percentage: 0.25 },
+                        mustardSeed: { name: "Mustard Seed, whole", percentage: 0.3 },
+                        sodiumErythorbate: { name: "Sodium Erythorbate", percentage: 0.05 },
+                        cure1: { name: "Cure #1", percentage: 0.25 },
+                        tspx: { name: "T-SPX Starter Culture", percentage: 0.025 },
+                        distilledWater: { name: "Distilled Water", percentage: 10 }
+                    }
+                }];
+                currentVersion = 0;
+                saveVersions();
+                renderTabs();
+                loadVersion(currentVersion);
+                updateIngredients();
+            }
+        }
+
+        function saveVersions() {
+            localStorage.setItem('sausageVersions', JSON.stringify(versions));
+        }
+    </script>
+</body>
+</html>
