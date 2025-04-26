@@ -543,7 +543,7 @@
             Object.values(ingredients).forEach(ingredient => {
                 if (ingredient.isMeat) {
                     meats.push(ingredient.name);
-                } else {
+                } else if (!ingredient.name.toLowerCase().includes('t-spx') && !ingredient.name.toLowerCase().includes('distilled water')) {
                     seasonings.push(ingredient.name);
                 }
             });
@@ -735,52 +735,4 @@
 
         function deleteVersion(index) {
             if (versions.length <= 1) {
-                alert("You must keep at least one version.");
-                return;
-            }
-
-            versions.splice(index, 1);
-            if (currentVersion >= versions.length) {
-                currentVersion = versions.length - 1;
-            }
-            saveVersions();
-            renderTabs();
-            renderIngredients();
-            updateIngredients();
-        }
-
-        function clearVersions() {
-            if (confirm("Are you sure you want to clear all versions? This will reset the calculator to a single default version.")) {
-                versions = [{
-                    name: `Version 1`,
-                    batchSize: 5,
-                    ingredients: {
-                        groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75, isMeat: true },
-                        groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25, isMeat: true },
-                        salt: { name: "Salt", percentage: 2 },
-                        dextrose: { name: "Dextrose", percentage: 0.7 },
-                        picklingSpice: { name: "Pickling Spice", percentage: 0.25 },
-                        blackPepper: { name: "Black Pepper", percentage: 0.25 },
-                        garlic: { name: "Fresh Garlic, minced", percentage: 0.5 },
-                        coriander: { name: "Coriander Seed, ground", percentage: 0.25 },
-                        mustardSeed: { name: "Mustard Seed, whole", percentage: 0.3 },
-                        sodiumErythorbate: { name: "Sodium Erythorbate", percentage: 0.05 },
-                        cure1: { name: "Cure #1", percentage: 0.25 },
-                        tspx: { name: "T-SPX Starter Culture", percentage: 0.025 },
-                        distilledWater: { name: "Distilled Water", percentage: 10 }
-                    }
-                }];
-                currentVersion = 0;
-                saveVersions();
-                renderTabs();
-                renderIngredients();
-                updateIngredients();
-            }
-        }
-
-        function saveVersions() {
-            localStorage.setItem('sausageVersions', JSON.stringify(versions));
-        }
-    </script>
-</body>
-</html>
+                alert("You must
