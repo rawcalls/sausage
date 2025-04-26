@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fermented Sausage Recipe Calculator</title>
+    <title>Grandpa's Summer Sausage Calculator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
@@ -148,10 +148,59 @@
         .clear-button:hover {
             background-color: #e68900;
         }
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .modal-button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .modal-button.yes {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .modal-button.yes:hover {
+            background-color: #45a049;
+        }
+        .modal-button.no {
+            background-color: #ff4444;
+            color: white;
+        }
+        .modal-button.no:hover {
+            background-color: #cc0000;
+        }
     </style>
 </head>
 <body>
-    <h1>Fermented Sausage Recipe Calculator</h1>
+    <h1>Grandpa's Summer Sausage Calculator</h1>
 
     <div class="input-section">
         <label for="batchSize">Batch Size (lbs):</label>
@@ -245,6 +294,17 @@
         <!-- Tabs will be dynamically added here -->
     </div>
 
+    <!-- Custom Modal for Yes/No Prompt -->
+    <div id="meatPromptModal" class="modal">
+        <div class="modal-content">
+            <p>Is this ingredient a type of meat (e.g., beef, pork)?</p>
+            <div class="modal-buttons">
+                <button id="meatPromptYes" class="modal-button yes">Yes</button>
+                <button id="meatPromptNo" class="modal-button no">No</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let versions = [];
         let currentVersion = 0;
@@ -298,8 +358,23 @@
             ingredientList.innerHTML = '';
 
             const ingredients = versions[currentVersion].ingredients;
-            Object.keys(ingredients).forEach(key => {
-                const ingredient = ingredients[key];
+            // Convert ingredients object to array of [key, ingredient] pairs
+            const ingredientEntries = Object.entries(ingredients);
+
+            // Split into meats and non-meats
+            const meats = ingredientEntries
+                .filter(([_, ingredient]) => ingredient.isMeat)
+                .sort((a, b) => b[1].percentage - a[1].percentage); // Sort by percentage descending
+
+            const nonMeats = ingredientEntries
+                .filter(([_, ingredient]) => !ingredient.isMeat)
+                .sort((a, b) => b[1].percentage - a[1].percentage); // Sort by percentage descending
+
+            // Combine meats and non-meats
+            const sortedEntries = [...meats, ...nonMeats];
+
+            // Render sorted ingredients
+            sortedEntries.forEach(([key, ingredient]) => {
                 const div = document.createElement('div');
                 div.className = 'ingredient';
                 div.innerHTML = `
@@ -312,14 +387,44 @@
 
             // Disable delete buttons if only one ingredient remains
             const deleteButtons = document.querySelectorAll('.delete-ingredient');
-            if (Object.keys(ingredients).length <= 1) {
+            if (sortedEntries.length <= 1) {
                 deleteButtons.forEach(btn => btn.disabled = true);
             } else {
                 deleteButtons.forEach(btn => btn.disabled = false);
             }
         }
 
-        function addIngredient() {
+        // Function to show the custom Yes/No prompt and return a Promise
+        function showMeatPrompt() {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('meatPromptModal');
+                const yesButton = document.getElementById('meatPromptYes');
+                const noButton = document.getElementById('meatPromptNo');
+
+                // Show the modal
+                modal.style.display = 'flex';
+
+                // Event listeners for the buttons
+                const onYes = () => {
+                    modal.style.display = 'none';
+                    yesButton.removeEventListener('click', onYes);
+                    noButton.removeEventListener('click', onNo);
+                    resolve(true);
+                };
+
+                const onNo = () => {
+                    modal.style.display = 'none';
+                    yesButton.removeEventListener('click', onYes);
+                    noButton.removeEventListener('click', onNo);
+                    resolve(false);
+                };
+
+                yesButton.addEventListener('click', onYes);
+                noButton.addEventListener('click', onNo);
+            });
+        }
+
+        async function addIngredient() {
             const name = prompt("Enter the name of the new ingredient:");
             if (!name || name.trim() === "") return;
 
@@ -332,7 +437,7 @@
                 return;
             }
 
-            const isMeat = confirm("Is this ingredient a type of meat (e.g., beef, pork)?");
+            const isMeat = await showMeatPrompt();
             ingredients[key] = { name: cleanName, percentage: 0, isMeat: isMeat };
             renderIngredients();
             updateIngredients();
@@ -430,6 +535,7 @@
         function updateInstructions() {
             const ingredients = versions[currentVersion].ingredients;
             const mixList = document.getElementById('mixIngredientsList');
+            if (!mixList) return;
             mixList.innerHTML = '';
 
             const meats = [];
@@ -482,10 +588,11 @@
                     const key = input.id;
                     const percentage = parseFloat(input.value);
                     const existing = versions[currentVersion].ingredients[key];
+                    const isMeat = existing.isMeat !== undefined ? existing.isMeat : (existing.name.toLowerCase().includes('beef') || existing.name.toLowerCase().includes('pork'));
                     ingredients[key] = {
                         name: existing.name,
                         percentage: percentage,
-                        isMeat: existing.isMeat || false
+                        isMeat: isMeat
                     };
                 }
                 console.log("Ingredients:", ingredients);
