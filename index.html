@@ -28,13 +28,49 @@
             font-weight: bold;
             margin-right: 10px;
         }
-        input[type="number"] {
+        input[type="number"], input[type="text"] {
             padding: 5px;
             width: 80px;
             font-size: 16px;
         }
+        input[type="text"] {
+            width: 150px;
+        }
         .ingredient {
             margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+        .ingredient label {
+            flex: 1;
+        }
+        .ingredient input {
+            margin-right: 10px;
+        }
+        .delete-ingredient {
+            padding: 5px 10px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .delete-ingredient:hover {
+            background-color: #cc0000;
+        }
+        .add-ingredient {
+            padding: 8px 16px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .add-ingredient:hover {
+            background-color: #1976D2;
         }
         table {
             width: 100%;
@@ -124,58 +160,10 @@
 
     <div id="ingredients">
         <h3>Adjust Ingredient Percentages (%)</h3>
-        <div class="ingredient">
-            <label>Ground Beef Chuck (70/30) (%):</label>
-            <input type="number" id="groundBeefChuck" value="75" step="0.1" onchange="updateIngredients()">
+        <div id="ingredientList">
+            <!-- Ingredients will be dynamically added here -->
         </div>
-        <div class="ingredient">
-            <label>Ground Pork Butt (80/20) (%):</label>
-            <input type="number" id="groundPorkButt" value="25" step="0.1" onchange="updateIngredients()">
-        </div>
-        <div class="ingredient">
-            <label>Salt (%):</label>
-            <input type="number" id="salt" value="2" step="0.01" onchange="updateIngredients()">
-        </div>
-        <div class="ingredient">
-            <label>Dextrose (%):</label>
-            <input type="number" id="dextrose" value="0.7" step="0.01" onchange="updateIngredients()">
-        </div>
-        <div class="ingredient">
-            <label>Pickling Spice (%):</label>
-            <input type="number" id="picklingSpice" value="0.25" step="0.01" onchange="updateIngredients()">
-        </div>
-        <div class="ingredient">
-            <label>Black Pepper (%):</label>
-            <input type="number" id="blackPepper" value="0.25" step="0.01" onchange="updateIngredients()">
-        </div>
-        <div class="ingredient">
-            <label>Fresh Garlic, minced (%):</label>
-            <input type="number" id="garlic" value="0.5" step="0.01" onchange="updateIngredients()">
-        </div>
-        <div class="ingredient">
-            <label>Coriander Seed, ground (%):</label>
-            <input type="number" id="coriander" value="0.25" step="0.01" onchange="updateIngredients()">
-        </div>
-        <div class="ingredient">
-            <label>Mustard Seed, whole (%):</label>
-            <input type="number" id="mustardSeed" value="0.3" step="0.01" onchange="updateIngredients()">
-        </div>
-        <div class="ingredient">
-            <label>Sodium Erythorbate (%):</label>
-            <input type="number" id="sodiumErythorbate" value="0.05" step="0.01" onchange="updateIngredients()">
-        </div>
-        <div class="ingredient">
-            <label>Cure #1 (%):</label>
-            <input type="number" id="cure1" value="0.25" step="0.01" onchange="updateIngredients()">
-        </div>
-        <div class="ingredient">
-            <label>T-SPX Starter Culture (%):</label>
-            <input type="number" id="tspx" value="0.025" step="0.01" onchange="updateIngredients()">
-        </div>
-        <div class="ingredient">
-            <label>Distilled Water (%):</label>
-            <input type="number" id="distilledWater" value="10" step="0.01" onchange="updateIngredients()">
-        </div>
+        <button class="add-ingredient" onclick="addIngredient()">Add New Ingredient</button>
     </div>
 
     <div class="button-section" style="text-align: center; margin: 10px 0;">
@@ -200,17 +188,15 @@
         <h2>Instructions</h2>
         <ol>
             <li><strong>Prepare Ingredients:</strong>
-                <ul>
+                <ul id="prepareIngredientsList">
                     <li>Chill ground beef chuck and pork butt to 35–40°F (2–4°C) to ensure safety and ease of mixing.</li>
                     <li>Soak muslin casings in lukewarm water for 1–2 hours to soften, ensuring they’re pliable for stuffing and smoke penetration. Rinse well and keep damp until use.</li>
                     <li>Dissolve T-SPX starter culture (adjusted quantity) in 1/4 cup distilled water and let sit for 10 minutes to activate.</li>
                 </ul>
             </li>
             <li><strong>Mix Seasonings and Meat:</strong>
-                <ul>
-                    <li>In a large, chilled bowl, combine ground beef chuck and pork butt (quantities as calculated).</li>
-                    <li>Add salt, dextrose, pickling spice, black pepper, minced garlic, ground coriander, whole mustard seeds, sodium erythorbate, and Cure #1 (quantities as calculated). Mix thoroughly by hand or with a stand mixer for 1–2 minutes until evenly distributed.</li>
-                    <li>Add activated T-SPX slurry and remaining distilled water (adjusted quantity minus the 1/4 cup used for culture). Mix until the meat becomes sticky and cohesive (about 1–2 minutes) to ensure proper binding and culture distribution.</li>
+                <ul id="mixIngredientsList">
+                    <!-- Dynamically updated based on ingredients -->
                 </ul>
             </li>
             <li><strong>Stuff Sausages:</strong>
@@ -277,8 +263,8 @@
                         name: `Version 1`,
                         batchSize: 5,
                         ingredients: {
-                            groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75 },
-                            groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25 },
+                            groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75, isMeat: true },
+                            groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25, isMeat: true },
                             salt: { name: "Salt", percentage: 2 },
                             dextrose: { name: "Dextrose", percentage: 0.7 },
                             picklingSpice: { name: "Pickling Spice", percentage: 0.25 },
@@ -297,6 +283,7 @@
                 console.log("Current version:", currentVersion, versions[currentVersion]);
                 renderTabs();
                 loadVersion(currentVersion);
+                renderIngredients();
                 updateIngredients();
 
                 // Fallback: Force updateIngredients after a short delay
@@ -305,6 +292,63 @@
                 console.error("Error in window.onload:", error.message, error.stack);
             }
         };
+
+        function renderIngredients() {
+            const ingredientList = document.getElementById('ingredientList');
+            ingredientList.innerHTML = '';
+
+            const ingredients = versions[currentVersion].ingredients;
+            Object.keys(ingredients).forEach(key => {
+                const ingredient = ingredients[key];
+                const div = document.createElement('div');
+                div.className = 'ingredient';
+                div.innerHTML = `
+                    <label>${ingredient.name} (%):</label>
+                    <input type="number" id="${key}" value="${ingredient.percentage}" step="0.01" onchange="updateIngredients()">
+                    <button class="delete-ingredient" onclick="deleteIngredient('${key}')">Delete</button>
+                `;
+                ingredientList.appendChild(div);
+            });
+
+            // Disable delete buttons if only one ingredient remains
+            const deleteButtons = document.querySelectorAll('.delete-ingredient');
+            if (Object.keys(ingredients).length <= 1) {
+                deleteButtons.forEach(btn => btn.disabled = true);
+            } else {
+                deleteButtons.forEach(btn => btn.disabled = false);
+            }
+        }
+
+        function addIngredient() {
+            const name = prompt("Enter the name of the new ingredient:");
+            if (!name || name.trim() === "") return;
+
+            const cleanName = name.trim();
+            const key = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const ingredients = versions[currentVersion].ingredients;
+
+            if (ingredients[key]) {
+                alert("An ingredient with this name already exists.");
+                return;
+            }
+
+            const isMeat = confirm("Is this ingredient a type of meat (e.g., beef, pork)?");
+            ingredients[key] = { name: cleanName, percentage: 0, isMeat: isMeat };
+            renderIngredients();
+            updateIngredients();
+        }
+
+        function deleteIngredient(key) {
+            const ingredients = versions[currentVersion].ingredients;
+            if (Object.keys(ingredients).length <= 1) {
+                alert("You must keep at least one ingredient.");
+                return;
+            }
+
+            delete ingredients[key];
+            renderIngredients();
+            updateIngredients();
+        }
 
         function renderTabs() {
             const tabsContainer = document.getElementById('versionTabs');
@@ -315,24 +359,20 @@
                 tab.className = 'tab' + (index === currentVersion ? ' active' : '');
                 tab.textContent = `${version.name} (${version.batchSize} lbs)`;
                 
-                // Handle regular click to switch versions
                 tab.onclick = (e) => {
                     if (e.shiftKey) {
-                        // Shift+Click for renaming (laptop)
                         renameVersion(index);
                     } else {
-                        // Regular click to switch version
                         switchVersion(index);
                     }
                 };
 
-                // Handle long press for mobile
                 let pressTimer;
                 tab.addEventListener('touchstart', (e) => {
                     pressTimer = setTimeout(() => {
                         e.preventDefault();
                         renameVersion(index);
-                    }, 1000); // 1000ms for long press
+                    }, 1000);
                 });
                 tab.addEventListener('touchend', () => clearTimeout(pressTimer));
                 tab.addEventListener('touchcancel', () => clearTimeout(pressTimer));
@@ -372,25 +412,54 @@
             currentVersion = index;
             loadVersion(index);
             renderTabs();
+            renderIngredients();
             updateIngredients();
         }
 
         function loadVersion(index) {
             const version = versions[index];
             document.getElementById('batchSize').value = version.batchSize;
-            document.getElementById('groundBeefChuck').value = version.ingredients.groundBeefChuck.percentage;
-            document.getElementById('groundPorkButt').value = version.ingredients.groundPorkButt.percentage;
-            document.getElementById('salt').value = version.ingredients.salt.percentage;
-            document.getElementById('dextrose').value = version.ingredients.dextrose.percentage;
-            document.getElementById('picklingSpice').value = version.ingredients.picklingSpice.percentage;
-            document.getElementById('blackPepper').value = version.ingredients.blackPepper.percentage;
-            document.getElementById('garlic').value = version.ingredients.garlic.percentage;
-            document.getElement moraid='coriander').value = version.ingredients.coriander.percentage;
-            document.getElementById('mustardSeed').value = version.ingredients.mustardSeed.percentage;
-            document.getElementById('sodiumErythorbate').value = version.ingredients.sodiumErythorbate.percentage;
-            document.getElementById('cure1').value = version.ingredients.cure1.percentage;
-            document.getElementById('tspx').value = version.ingredients.tspx.percentage;
-            document.getElementById('distilledWater').value = version.ingredients.distilledWater.percentage;
+            Object.keys(version.ingredients).forEach(key => {
+                const input = document.getElementById(key);
+                if (input) {
+                    input.value = version.ingredients[key].percentage;
+                }
+            });
+        }
+
+        function updateInstructions() {
+            const ingredients = versions[currentVersion].ingredients;
+            const mixList = document.getElementById('mixIngredientsList');
+            mixList.innerHTML = '';
+
+            const meats = [];
+            const seasonings = [];
+            Object.values(ingredients).forEach(ingredient => {
+                if (ingredient.isMeat) {
+                    meats.push(ingredient.name);
+                } else {
+                    seasonings.push(ingredient.name);
+                }
+            });
+
+            if (meats.length > 0) {
+                const li1 = document.createElement('li');
+                li1.textContent = `In a large, chilled bowl, combine ${meats.join(' and ')} (quantities as calculated).`;
+                mixList.appendChild(li1);
+            }
+
+            if (seasonings.length > 0) {
+                const li2 = document.createElement('li');
+                li2.textContent = `Add ${seasonings.join(', ')} (quantities as calculated). Mix thoroughly by hand or with a stand mixer for 1–2 minutes until evenly distributed.`;
+                mixList.appendChild(li2);
+            }
+
+            const tspx = Object.values(ingredients).find(ing => ing.name.toLowerCase().includes('t-spx'));
+            if (tspx) {
+                const li3 = document.createElement('li');
+                li3.textContent = `Add activated T-SPX slurry and remaining distilled water (adjusted quantity minus the 1/4 cup used for culture). Mix until the meat becomes sticky and cohesive (about 1–2 minutes) to ensure proper binding and culture distribution.`;
+                mixList.appendChild(li3);
+            }
         }
 
         function updateIngredients() {
@@ -406,59 +475,54 @@
                     return;
                 }
 
-                const ingredients = {
-                    groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: parseFloat(document.getElementById('groundBeefChuck').value) },
-                    groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: parseFloat(document.getElementById('groundPorkButt').value) },
-                    salt: { name: "Salt", percentage: parseFloat(document.getElementById('salt').value) },
-                    dextrose: { name: "Dextrose", percentage: parseFloat(document.getElementById('dextrose').value) },
-                    picklingSpice: { name: "Pickling Spice", percentage: parseFloat(document.getElementById('picklingSpice').value) },
-                    blackPepper: { name: "Black Pepper", percentage: parseFloat(document.getElementById('blackPepper').value) },
-                    garlic: { name: "Fresh Garlic, minced", percentage: parseFloat(document.getElementById('garlic').value) },
-                    coriander: { name: "Coriander Seed, ground", percentage: parseFloat(document.getElementById('coriander').value) },
-                    mustardSeed: { name: "Mustard Seed, whole", percentage: parseFloat(document.getElementById('mustardSeed').value) },
-                    sodiumErythorbate: { name: "Sodium Erythorbate", percentage: parseFloat(document.getElementById('sodiumErythorbate').value) },
-                    cure1: { name: "Cure #1", percentage: parseFloat(document.getElementById('cure1').value) },
-                    tspx: { name: "T-SPX Starter Culture", percentage: parseFloat(document.getElementById('tspx').value) },
-                    distilledWater: { name: "Distilled Water", percentage: parseFloat(document.getElementById('distilledWater').value) }
-                };
+                const ingredients = {};
+                const ingredientList = document.getElementById('ingredientList').children;
+                for (let div of ingredientList) {
+                    const input = div.querySelector('input[type="number"]');
+                    const key = input.id;
+                    const percentage = parseFloat(input.value);
+                    const existing = versions[currentVersion].ingredients[key];
+                    ingredients[key] = {
+                        name: existing.name,
+                        percentage: percentage,
+                        isMeat: existing.isMeat || false
+                    };
+                }
                 console.log("Ingredients:", ingredients);
 
-                // Check for undefined or NaN values in ingredients
                 Object.values(ingredients).forEach(ingredient => {
                     if (isNaN(ingredient.percentage) || ingredient.percentage === undefined) {
                         throw new Error(`Invalid percentage for ${ingredient.name}`);
                     }
                 });
 
-                // Validate that meat percentages add up to 100%
-                const meatTotal = ingredients.groundBeefChuck.percentage + ingredients.groundPorkButt.percentage;
+                const meatTotal = Object.values(ingredients)
+                    .filter(ing => ing.isMeat)
+                    .reduce((sum, ing) => sum + ing.percentage, 0);
                 console.log("Meat total:", meatTotal);
                 if (Math.abs(meatTotal - 100) > 0.01) {
                     console.log("Meat percentages do not add up to 100, aborting");
-                    alert("Ground Beef Chuck and Ground Pork Butt percentages should add up to 100%.");
+                    alert("The percentages of meat ingredients (e.g., beef, pork) should add up to 100%.");
                     return;
                 }
 
-                // Update the versions array
-                if (!versions[currentVersion]) throw new Error("Current version not found");
                 versions[currentVersion] = {
-                    name: versions[currentVersion].name, // Preserve the name
+                    name: versions[currentVersion].name,
                     batchSize: batchSize,
                     ingredients: ingredients
                 };
                 console.log("Updated versions:", versions);
 
-                // Update the ingredients table
                 const tbody = document.getElementById('ingredientBody');
                 if (!tbody) throw new Error("Ingredient table body not found");
-                tbody.innerHTML = ''; // Clear previous rows
+                tbody.innerHTML = '';
                 console.log("Cleared ingredient table");
 
                 Object.values(ingredients).forEach(ingredient => {
                     const percentage = ingredient.percentage;
-                    const scaledAmount = (percentage / 100) * batchSize; // Calculate amount in lbs
-                    const oz = scaledAmount * 16; // Convert lbs to oz
-                    const grams = scaledAmount * 453.592; // Convert lbs to grams
+                    const scaledAmount = (percentage / 100) * batchSize;
+                    const oz = scaledAmount * 16;
+                    const grams = scaledAmount * 453.592;
 
                     const row = document.createElement('tr');
                     row.innerHTML = `
@@ -472,6 +536,7 @@
                     console.log("Added row:", ingredient.name, scaledAmount, oz, grams, percentage);
                 });
 
+                updateInstructions();
                 saveVersions();
                 renderTabs();
             } catch (error) {
@@ -488,9 +553,9 @@
             const ingredients = versions[currentVersion].ingredients;
             Object.values(ingredients).forEach(ingredient => {
                 const percentage = ingredient.percentage;
-                const scaledAmount = (percentage / 100) * batchSize; // Calculate amount in lbs
-                const oz = scaledAmount * 16; // Convert lbs to oz
-                const grams = scaledAmount * 453.592; // Convert lbs to grams
+                const scaledAmount = (percentage / 100) * batchSize;
+                const oz = scaledAmount * 16;
+                const grams = scaledAmount * 453.592;
 
                 data.push([
                     ingredient.name,
@@ -501,21 +566,18 @@
                 ]);
             });
 
-            // Create a new workbook and worksheet
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(data);
 
-            // Apply formatting
             const colWidths = [
-                { wch: 25 }, // Ingredient
-                { wch: 15 }, // Amount (lbs)
-                { wch: 15 }, // Amount (oz)
-                { wch: 15 }, // Amount (g)
-                { wch: 15 }  // Percentage
+                { wch: 25 },
+                { wch: 15 },
+                { wch: 15 },
+                { wch: 15 },
+                { wch: 15 }
             ];
             ws['!cols'] = colWidths;
 
-            // Style the header row (bold and centered)
             data[0].forEach((_, colIndex) => {
                 const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIndex });
                 if (!ws[cellRef]) ws[cellRef] = { t: 's', v: data[0][colIndex] };
@@ -531,7 +593,6 @@
                 };
             });
 
-            // Add borders to all data cells
             for (let row = 1; row < data.length; row++) {
                 for (let col = 0; col < data[row].length; col++) {
                     const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
@@ -547,10 +608,7 @@
                 }
             }
 
-            // Append the worksheet to the workbook
             XLSX.utils.book_append_sheet(wb, ws, "Recipe");
-
-            // Export the workbook
             XLSX.writeFile(wb, `Sausage_Recipe_${versions[currentVersion].name}.xlsx`);
         }
 
@@ -559,12 +617,12 @@
             versions.push({
                 name: `Version ${versions.length + 1}`,
                 batchSize: current.batchSize,
-                ingredients: JSON.parse(JSON.stringify(current.ingredients)) // Deep copy
+                ingredients: JSON.parse(JSON.stringify(current.ingredients))
             });
             currentVersion = versions.length - 1;
             saveVersions();
             renderTabs();
-            loadVersion(currentVersion);
+            renderIngredients();
             updateIngredients();
         }
 
@@ -580,7 +638,7 @@
             }
             saveVersions();
             renderTabs();
-            loadVersion(currentVersion);
+            renderIngredients();
             updateIngredients();
         }
 
@@ -590,8 +648,8 @@
                     name: `Version 1`,
                     batchSize: 5,
                     ingredients: {
-                        groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75 },
-                        groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25 },
+                        groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75, isMeat: true },
+                        groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25, isMeat: true },
                         salt: { name: "Salt", percentage: 2 },
                         dextrose: { name: "Dextrose", percentage: 0.7 },
                         picklingSpice: { name: "Pickling Spice", percentage: 0.25 },
@@ -608,7 +666,7 @@
                 currentVersion = 0;
                 saveVersions();
                 renderTabs();
-                loadVersion(currentVersion);
+                renderIngredients();
                 updateIngredients();
             }
         }
