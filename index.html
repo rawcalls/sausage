@@ -93,33 +93,49 @@
             border-radius: 5px;
             box-shadow: 0 0 5px rgba(0,0,0,0.1);
         }
-        .tabs {
+        .recipe-tabs, .version-tabs {
             display: flex;
             flex-wrap: wrap;
-            margin-top: 20px;
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
+            margin: 20px 0;
+            padding: 10px 0;
         }
-        .tab {
+        .recipe-tabs {
+            border-bottom: 1px solid #ddd;
+        }
+        .version-tabs {
+            border-top: 1px solid #ddd;
+        }
+        .recipe-tab, .version-tab {
             padding: 8px 16px;
             margin-right: 5px;
-            background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 5px 5px 0 0;
             cursor: pointer;
             font-size: 14px;
         }
-        .tab.active {
+        .recipe-tab {
+            background-color: #2196F3;
+        }
+        .recipe-tab.active {
+            background-color: #1976D2;
+        }
+        .recipe-tab:hover {
+            background-color: #1976D2;
+        }
+        .version-tab {
+            background-color: #4CAF50;
+        }
+        .version-tab.active {
             background-color: #45a049;
         }
-        .tab:hover {
+        .version-tab:hover {
             background-color: #45a049;
         }
-        .tab.add {
+        .recipe-tab.add, .version-tab.add {
             background-color: #666;
         }
-        .tab.add:hover {
+        .recipe-tab.add:hover, .version-tab.add:hover {
             background-color: #555;
         }
         .delete-tab {
@@ -135,9 +151,8 @@
         .delete-tab:hover {
             background-color: #cc0000;
         }
-        .clear-button {
+        .clear-button, .reset-button {
             padding: 8px 16px;
-            background-color: #ff9800;
             color: white;
             border: none;
             border-radius: 5px;
@@ -145,8 +160,26 @@
             font-size: 14px;
             margin-left: 10px;
         }
+        .clear-button {
+            background-color: #ff9800;
+        }
         .clear-button:hover {
             background-color: #e68900;
+        }
+        .reset-button {
+            background-color: #ff9800;
+        }
+        .reset-button:hover {
+            background-color: #e68900;
+        }
+        [contenteditable="true"] {
+            border: 1px dashed #ccc;
+            padding: 5px;
+            margin: 5px 0;
+            background-color: #f5f5f5;
+        }
+        [contenteditable="true"]:hover {
+            background-color: #e8e8e8;
         }
         /* Modal Styles */
         .modal {
@@ -202,6 +235,10 @@
 <body>
     <h1>Grandpa's Summer Sausage Calculator</h1>
 
+    <div class="recipe-tabs" id="recipeTabs">
+        <!-- Recipe tabs will be dynamically added here -->
+    </div>
+
     <div class="input-section">
         <label for="batchSize">Batch Size (lbs):</label>
         <input type="number" id="batchSize" value="5" min="1" step="0.1" onchange="updateIngredients()">
@@ -235,63 +272,64 @@
 
     <div class="directions">
         <h2>Instructions</h2>
-        <ol>
+        <ol id="instructionsList">
             <li><strong>Prepare Ingredients:</strong>
-                <ul id="prepareIngredientsList">
+                <ul contenteditable="true" id="prepareIngredientsList">
                     <li>Chill ground beef chuck and pork butt to 35–40°F (2–4°C) to ensure safety and ease of mixing.</li>
                     <li>Soak muslin casings in lukewarm water for 1–2 hours to soften, ensuring they’re pliable for stuffing and smoke penetration. Rinse well and keep damp until use.</li>
                     <li>Dissolve T-SPX starter culture (adjusted quantity) in 1/4 cup distilled water and let sit for 10 minutes to activate.</li>
                 </ul>
             </li>
             <li><strong>Mix Seasonings and Meat:</strong>
-                <ul id="mixIngredientsList">
+                <ul contenteditable="true" id="mixIngredientsList">
                     <!-- Dynamically updated based on ingredients -->
                 </ul>
             </li>
             <li><strong>Stuff Sausages:</strong>
-                <ul>
+                <ul contenteditable="true" id="stuffSausagesList">
                     <li>Load the sausage stuffer with the meat mixture, avoiding air pockets.</li>
                     <li>Stuff into muslin casings, forming 10–12 inch logs or as desired (muslin casings are typically larger, often 2–3 inches in diameter). Tie ends securely with butcher’s twine, ensuring a tight pack to prevent air gaps. Prick any air bubbles with a sterile pin.</li>
                 </ul>
             </li>
             <li><strong>Fermentation During Cold Smoking:</strong>
-                <ul>
+                <ul contenteditable="true" id="fermentationList">
                     <li>Hang sausages in a smoker set to 75°F (24°C) with 80–85% relative humidity. Apply light, consistent smoke using hardwood (e.g., hickory or applewood) for 60 hours.</li>
                     <li>The T-SPX culture and dextrose will ferment slowly, lowering the pH to ~5.0–5.1. Ensure good airflow to support fermentation and smoke penetration through the muslin casings.</li>
                     <li>After 60 hours, check pH with a meter or test strips to confirm it’s near 5.0–5.1.</li>
                 </ul>
             </li>
             <li><strong>Hot Smoking:</strong>
-                <ul>
+                <ul contenteditable="true" id="hotSmokingList">
                     <li>Gradually increase smoker temperature by 10°F per hour, starting from 75°F to 160°F (71°C), maintaining light smoke and 70–80% humidity to prevent case hardening.</li>
                     <li>Smoke until the internal temperature reaches 148°F (64°C), typically 8–9 hours (75°F to 160°F = 85°F, at 10°F/hour). Monitor with a probe thermometer inserted through the muslin casing.</li>
                     <li>Verify pH post-hot smoking is ~5.0. If slightly above, extend hot smoking at 148°F for 1–2 hours and recheck.</li>
                 </ul>
             </li>
             <li><strong>Cooling:</strong>
-                <ul>
+                <ul contenteditable="true" id="coolingList">
                     <li>Immediately place sausages in an ice-water bath to cool below 120°F (49°C) to stop cooking and ensure food safety. Muslin casings can be left on during cooling.</li>
                     <li>Pat dry and let rest at room temperature for 1–2 hours to stabilize.</li>
                 </ul>
             </li>
             <li><strong>Storage:</strong>
-                <ul>
+                <ul contenteditable="true" id="storageList">
                     <li>Remove muslin casings after cooling, or leave on if preferred for storage (they can be peeled off before consumption). Vacuum-seal or wrap tightly and refrigerate at 35–40°F (2–4°C) for up to 2 weeks or freeze for up to 6 months.</li>
                 </ul>
             </li>
         </ol>
         <h3>Notes</h3>
-        <ul>
+        <ul contenteditable="true" id="notesList">
             <li><strong>Fat Content:</strong> Yields 27.5% total fat for better texture.</li>
             <li><strong>T-SPX:</strong> Mimics Nebraska’s wild fermentation.</li>
             <li><strong>Dextrose:</strong> Adjust to 0.6% if pH drops below 4.8, or 0.8% if above 5.0.</li>
             <li><strong>Safety:</strong> Cure #1 prevents botulism. Hot smoking to 148°F is safe, though 150°F is more conservative.</li>
             <li><strong>Nebraska Climate:</strong> Use a humidifier to maintain 80–85% humidity during cold smoking.</li>
         </ul>
+        <button class="reset-button" onclick="resetInstructions()">Reset Instructions</button>
     </div>
 
-    <div class="tabs" id="versionTabs">
-        <!-- Tabs will be dynamically added here -->
+    <div class="version-tabs" id="versionTabs">
+        <!-- Version tabs will be dynamically added here -->
     </div>
 
     <!-- Custom Modal for Yes/No Prompt -->
@@ -306,42 +344,107 @@
     </div>
 
     <script>
-        let versions = [];
+        let recipes = [];
+        let currentRecipe = 0;
         let currentVersion = 0;
 
-        // Load versions and initialize the page
+        // Default ingredients for a new version
+        const defaultIngredients = {
+            groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75, isMeat: true },
+            groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25, isMeat: true },
+            salt: { name: "Salt", percentage: 2 },
+            dextrose: { name: "Dextrose", percentage: 0.7 },
+            picklingSpice: { name: "Pickling Spice", percentage: 0.25 },
+            blackPepper: { name: "Black Pepper", percentage: 0.25 },
+            garlic: { name: "Fresh Garlic, minced", percentage: 0.5 },
+            coriander: { name: "Coriander Seed, ground", percentage: 0.25 },
+            mustardSeed: { name: "Mustard Seed, whole", percentage: 0.3 },
+            sodiumErythorbate: { name: "Sodium Erythorbate", percentage: 0.05 },
+            cure1: { name: "Cure #1", percentage: 0.25 },
+            tspx: { name: "T-SPX Starter Culture", percentage: 0.025 },
+            distilledWater: { name: "Distilled Water", percentage: 10 }
+        };
+
+        // Default instructions for reset
+        const defaultInstructions = {
+            prepareIngredientsList: `
+                <li>Chill ground beef chuck and pork butt to 35–40°F (2–4°C) to ensure safety and ease of mixing.</li>
+                <li>Soak muslin casings in lukewarm water for 1–2 hours to soften, ensuring they’re pliable for stuffing and smoke penetration. Rinse well and keep damp until use.</li>
+                <li>Dissolve T-SPX starter culture (adjusted quantity) in 1/4 cup distilled water and let sit for 10 minutes to activate.</li>
+            `,
+            mixIngredientsList: "", // Will be dynamically populated
+            stuffSausagesList: `
+                <li>Load the sausage stuffer with the meat mixture, avoiding air pockets.</li>
+                <li>Stuff into muslin casings, forming 10–12 inch logs or as desired (muslin casings are typically larger, often 2–3 inches in diameter). Tie ends securely with butcher’s twine, ensuring a tight pack to prevent air gaps. Prick any air bubbles with a sterile pin.</li>
+            `,
+            fermentationList: `
+                <li>Hang sausages in a smoker set to 75°F (24°C) with 80–85% relative humidity. Apply light, consistent smoke using hardwood (e.g., hickory or applewood) for 60 hours.</li>
+                <li>The T-SPX culture and dextrose will ferment slowly, lowering the pH to ~5.0–5.1. Ensure good airflow to support fermentation and smoke penetration through the muslin casings.</li>
+                <li>After 60 hours, check pH with a meter or test strips to confirm it’s near 5.0–5.1.</li>
+            `,
+            hotSmokingList: `
+                <li>Gradually increase smoker temperature by 10°F per hour, starting from 75°F to 160°F (71°C), maintaining light smoke and 70–80% humidity to prevent case hardening.</li>
+                <li>Smoke until the internal temperature reaches 148°F (64°C), typically 8–9 hours (75°F to 160°F = 85°F, at 10°F/hour). Monitor with a probe thermometer inserted through the muslin casing.</li>
+                <li>Verify pH post-hot smoking is ~5.0. If slightly above, extend hot smoking at 148°F for 1–2 hours and recheck.</li>
+            `,
+            coolingList: `
+                <li>Immediately place sausages in an ice-water bath to cool below 120°F (49°C) to stop cooking and ensure food safety. Muslin casings can be left on during cooling.</li>
+                <li>Pat dry and let rest at room temperature for 1–2 hours to stabilize.</li>
+            `,
+            storageList: `
+                <li>Remove muslin casings after cooling, or leave on if preferred for storage (they can be peeled off before consumption). Vacuum-seal or wrap tightly and refrigerate at 35–40°F (2–4°C) for up to 2 weeks or freeze for up to 6 months.</li>
+            `,
+            notesList: `
+                <li><strong>Fat Content:</strong> Yields 27.5% total fat for better texture.</li>
+                <li><strong>T-SPX:</strong> Mimics Nebraska’s wild fermentation.</li>
+                <li><strong>Dextrose:</strong> Adjust to 0.6% if pH drops below 4.8, or 0.8% if above 5.0.</li>
+                <li><strong>Safety:</strong> Cure #1 prevents botulism. Hot smoking to 148°F is safe, though 150°F is more conservative.</li>
+                <li><strong>Nebraska Climate:</strong> Use a humidifier to maintain 80–85% humidity during cold smoking.</li>
+            `
+        };
+
+        // Load recipes and initialize the page
         document.addEventListener('DOMContentLoaded', function() {
             try {
                 console.log("DOMContentLoaded triggered");
-                const savedVersions = localStorage.getItem('sausageVersions');
-                if (savedVersions) {
-                    console.log("Loading saved versions from localStorage");
-                    versions = JSON.parse(savedVersions);
+                const savedRecipes = localStorage.getItem('sausageRecipes');
+                if (savedRecipes) {
+                    console.log("Loading saved recipes from localStorage");
+                    recipes = JSON.parse(savedRecipes);
                 } else {
-                    console.log("No saved versions, initializing default version");
-                    versions.push({
-                        name: `Version 1`,
-                        batchSize: 5,
-                        ingredients: {
-                            groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75, isMeat: true },
-                            groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25, isMeat: true },
-                            salt: { name: "Salt", percentage: 2 },
-                            dextrose: { name: "Dextrose", percentage: 0.7 },
-                            picklingSpice: { name: "Pickling Spice", percentage: 0.25 },
-                            blackPepper: { name: "Black Pepper", percentage: 0.25 },
-                            garlic: { name: "Fresh Garlic, minced", percentage: 0.5 },
-                            coriander: { name: "Coriander Seed, ground", percentage: 0.25 },
-                            mustardSeed: { name: "Mustard Seed, whole", percentage: 0.3 },
-                            sodiumErythorbate: { name: "Sodium Erythorbate", percentage: 0.05 },
-                            cure1: { name: "Cure #1", percentage: 0.25 },
-                            tspx: { name: "T-SPX Starter Culture", percentage: 0.025 },
-                            distilledWater: { name: "Distilled Water", percentage: 10 }
-                        }
+                    console.log("No saved recipes, initializing default recipe");
+                    recipes.push({
+                        name: "Summer Sausage",
+                        versions: [{
+                            name: "Version 1",
+                            batchSize: 5,
+                            ingredients: defaultIngredients
+                        }]
                     });
                 }
-                currentVersion = versions.length - 1;
-                console.log("Current version:", currentVersion, versions[currentVersion]);
-                renderTabs();
+                currentRecipe = 0;
+                currentVersion = 0;
+                console.log("Current recipe:", currentRecipe, "Current version:", currentVersion);
+
+                // Load saved instructions
+                Object.keys(defaultInstructions).forEach(stepId => {
+                    const savedContent = localStorage.getItem(stepId);
+                    const element = document.getElementById(stepId);
+                    if (savedContent) {
+                        element.innerHTML = savedContent;
+                    } else {
+                        element.innerHTML = defaultInstructions[stepId];
+                    }
+                    element.addEventListener('input', function() {
+                        localStorage.setItem(stepId, this.innerHTML);
+                        if (stepId === 'mixIngredientsList') {
+                            localStorage.setItem('mixIngredientsListEdited', 'true');
+                        }
+                    });
+                });
+
+                renderRecipeTabs();
+                renderVersionTabs();
                 loadVersion(currentVersion);
                 renderIngredients();
                 updateIngredients();
@@ -354,23 +457,19 @@
             const ingredientList = document.getElementById('ingredientList');
             ingredientList.innerHTML = '';
 
-            const ingredients = versions[currentVersion].ingredients;
-            // Convert ingredients object to array of [key, ingredient] pairs
+            const ingredients = recipes[currentRecipe].versions[currentVersion].ingredients;
             const ingredientEntries = Object.entries(ingredients);
 
-            // Split into meats and non-meats
             const meats = ingredientEntries
                 .filter(([_, ingredient]) => ingredient.isMeat)
-                .sort((a, b) => b[1].percentage - a[1].percentage); // Sort by percentage descending
+                .sort((a, b) => b[1].percentage - a[1].percentage);
 
             const nonMeats = ingredientEntries
                 .filter(([_, ingredient]) => !ingredient.isMeat)
-                .sort((a, b) => b[1].percentage - a[1].percentage); // Sort by percentage descending
+                .sort((a, b) => b[1].percentage - a[1].percentage);
 
-            // Combine meats and non-meats
             const sortedEntries = [...meats, ...nonMeats];
 
-            // Render sorted ingredients
             sortedEntries.forEach(([key, ingredient]) => {
                 const div = document.createElement('div');
                 div.className = 'ingredient';
@@ -382,7 +481,6 @@
                 ingredientList.appendChild(div);
             });
 
-            // Disable delete buttons if only one ingredient remains
             const deleteButtons = document.querySelectorAll('.delete-ingredient');
             if (sortedEntries.length <= 1) {
                 deleteButtons.forEach(btn => btn.disabled = true);
@@ -391,17 +489,14 @@
             }
         }
 
-        // Function to show the custom Yes/No prompt and return a Promise
         function showMeatPrompt() {
             return new Promise((resolve) => {
                 const modal = document.getElementById('meatPromptModal');
                 const yesButton = document.getElementById('meatPromptYes');
                 const noButton = document.getElementById('meatPromptNo');
 
-                // Show the modal
                 modal.style.display = 'flex';
 
-                // Event listeners for the buttons
                 const onYes = () => {
                     modal.style.display = 'none';
                     yesButton.removeEventListener('click', onYes);
@@ -427,7 +522,7 @@
 
             const cleanName = name.trim();
             const key = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const ingredients = versions[currentVersion].ingredients;
+            const ingredients = recipes[currentRecipe].versions[currentVersion].ingredients;
 
             if (ingredients[key]) {
                 alert("An ingredient with this name already exists.");
@@ -441,7 +536,7 @@
         }
 
         function deleteIngredient(key) {
-            const ingredients = versions[currentVersion].ingredients;
+            const ingredients = recipes[currentRecipe].versions[currentVersion].ingredients;
             if (Object.keys(ingredients).length <= 1) {
                 alert("You must keep at least one ingredient.");
                 return;
@@ -452,13 +547,63 @@
             updateIngredients();
         }
 
-        function renderTabs() {
+        function renderRecipeTabs() {
+            const tabsContainer = document.getElementById('recipeTabs');
+            tabsContainer.innerHTML = '';
+
+            recipes.forEach((recipe, index) => {
+                const tab = document.createElement('button');
+                tab.className = 'recipe-tab' + (index === currentRecipe ? ' active' : '');
+                tab.textContent = recipe.name;
+                
+                tab.onclick = (e) => {
+                    if (e.shiftKey) {
+                        renameRecipe(index);
+                    } else {
+                        switchRecipe(index);
+                    }
+                };
+
+                let pressTimer;
+                tab.addEventListener('touchstart', (e) => {
+                    pressTimer = setTimeout(() => {
+                        e.preventDefault();
+                        renameRecipe(index);
+                    }, 1000);
+                });
+                tab.addEventListener('touchend', () => clearTimeout(pressTimer));
+                tab.addEventListener('touchcancel', () => clearTimeout(pressTimer));
+
+                tabsContainer.appendChild(tab);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete-tab';
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = () => deleteRecipe(index);
+                tabsContainer.appendChild(deleteButton);
+            });
+
+            const addTab = document.createElement('button');
+            addTab.className = 'recipe-tab add';
+            addTab.textContent = '+';
+            addTab.onclick = addRecipe;
+            tabsContainer.appendChild(addTab);
+
+            const clearButton = document.createElement('button');
+            clearButton.className = 'clear-button';
+            clearButton.textContent = 'Clear All Recipes';
+            clearButton.onclick = clearRecipes;
+            tabsContainer.appendChild(clearButton);
+        }
+
+        function renderVersionTabs() {
             const tabsContainer = document.getElementById('versionTabs');
             tabsContainer.innerHTML = '';
 
+            const versions = recipes[currentRecipe].versions;
             versions.forEach((version, index) => {
                 const tab = document.createElement('button');
-                tab.className = 'tab' + (index === currentVersion ? ' active' : '');
+                tab.className = 'version-tab' + (index === currentVersion ? ' active' : '');
                 tab.textContent = `${version.name} (${version.batchSize} lbs)`;
                 
                 tab.onclick = (e) => {
@@ -489,7 +634,7 @@
             });
 
             const addTab = document.createElement('button');
-            addTab.className = 'tab add';
+            addTab.className = 'version-tab add';
             addTab.textContent = '+';
             addTab.onclick = addVersion;
             tabsContainer.appendChild(addTab);
@@ -501,25 +646,46 @@
             tabsContainer.appendChild(clearButton);
         }
 
-        function renameVersion(index) {
-            const newName = prompt("Enter a new name for this version:", versions[index].name);
+        function renameRecipe(index) {
+            const newName = prompt("Enter a new name for this recipe:", recipes[index].name);
             if (newName && newName.trim() !== "") {
-                versions[index].name = newName.trim();
-                saveVersions();
-                renderTabs();
+                recipes[index].name = newName.trim();
+                saveRecipes();
+                renderRecipeTabs();
             }
+        }
+
+        function renameVersion(index) {
+            const newName = prompt("Enter a new name for this version:", recipes[currentRecipe].versions[index].name);
+            if (newName && newName.trim() !== "") {
+                recipes[currentRecipe].versions[index].name = newName.trim();
+                saveRecipes();
+                renderVersionTabs();
+            }
+        }
+
+        function switchRecipe(index) {
+            currentRecipe = index;
+            currentVersion = 0;
+            saveRecipes();
+            renderRecipeTabs();
+            renderVersionTabs();
+            loadVersion(currentVersion);
+            renderIngredients();
+            updateIngredients();
         }
 
         function switchVersion(index) {
             currentVersion = index;
-            loadVersion(index);
-            renderTabs();
+            saveRecipes();
+            renderVersionTabs();
+            loadVersion(currentVersion);
             renderIngredients();
             updateIngredients();
         }
 
         function loadVersion(index) {
-            const version = versions[index];
+            const version = recipes[currentRecipe].versions[index];
             document.getElementById('batchSize').value = version.batchSize;
             Object.keys(version.ingredients).forEach(key => {
                 const input = document.getElementById(key);
@@ -530,14 +696,18 @@
         }
 
         function updateInstructions() {
-            const ingredients = versions[currentVersion].ingredients;
             const mixList = document.getElementById('mixIngredientsList');
             if (!mixList) {
                 console.error("mixIngredientsList element not found");
                 return;
             }
+
+            const isEdited = localStorage.getItem('mixIngredientsListEdited') === 'true';
+            if (isEdited) return;
+
             mixList.innerHTML = '';
 
+            const ingredients = recipes[currentRecipe].versions[currentVersion].ingredients;
             const meats = [];
             const seasonings = [];
             Object.values(ingredients).forEach(ingredient => {
@@ -566,6 +736,8 @@
                 li3.textContent = `Add activated T-SPX slurry and remaining distilled water (adjusted quantity minus the 1/4 cup used for culture). Mix until the meat becomes sticky and cohesive (about 1–2 minutes) to ensure proper binding and culture distribution.`;
                 mixList.appendChild(li3);
             }
+
+            localStorage.setItem('mixIngredientsList', mixList.innerHTML);
         }
 
         function updateIngredients() {
@@ -587,7 +759,7 @@
                     const input = div.querySelector('input[type="number"]');
                     const key = input.id;
                     const percentage = parseFloat(input.value);
-                    const existing = versions[currentVersion].ingredients[key];
+                    const existing = recipes[currentRecipe].versions[currentVersion].ingredients[key];
                     const isMeat = existing.isMeat !== undefined ? existing.isMeat : (existing.name.toLowerCase().includes('beef') || existing.name.toLowerCase().includes('pork'));
                     ingredients[key] = {
                         name: existing.name,
@@ -613,12 +785,12 @@
                     return;
                 }
 
-                versions[currentVersion] = {
-                    name: versions[currentVersion].name,
+                recipes[currentRecipe].versions[currentVersion] = {
+                    name: recipes[currentRecipe].versions[currentVersion].name,
                     batchSize: batchSize,
                     ingredients: ingredients
                 };
-                console.log("Updated versions:", versions);
+                console.log("Updated recipes:", recipes);
 
                 const tbody = document.getElementById('ingredientBody');
                 if (!tbody) throw new Error("Ingredient table body not found");
@@ -644,8 +816,8 @@
                 });
 
                 updateInstructions();
-                saveVersions();
-                renderTabs();
+                saveRecipes();
+                renderVersionTabs();
             } catch (error) {
                 console.error("Error in updateIngredients:", error.message, error.stack);
             }
@@ -657,7 +829,7 @@
                 ["Ingredient", "Amount (lbs)", "Amount (oz)", "Amount (g)", "Percentage (%)"]
             ];
 
-            const ingredients = versions[currentVersion].ingredients;
+            const ingredients = recipes[currentRecipe].versions[currentVersion].ingredients;
             Object.values(ingredients).forEach(ingredient => {
                 const percentage = ingredient.percentage;
                 const scaledAmount = (percentage / 100) * batchSize;
@@ -716,70 +888,124 @@
             }
 
             XLSX.utils.book_append_sheet(wb, ws, "Recipe");
-            XLSX.writeFile(wb, `Sausage_Recipe_${versions[currentVersion].name}.xlsx`);
+            XLSX.writeFile(wb, `Sausage_Recipe_${recipes[currentRecipe].name}_${recipes[currentRecipe].versions[currentVersion].name}.xlsx`);
+        }
+
+        function addRecipe() {
+            recipes.push({
+                name: `Recipe ${recipes.length + 1}`,
+                versions: [{
+                    name: "Version 1",
+                    batchSize: 5,
+                    ingredients: JSON.parse(JSON.stringify(defaultIngredients))
+                }]
+            });
+            currentRecipe = recipes.length - 1;
+            currentVersion = 0;
+            saveRecipes();
+            renderRecipeTabs();
+            renderVersionTabs();
+            renderIngredients();
+            updateIngredients();
         }
 
         function addVersion() {
-            const current = versions[currentVersion];
-            versions.push({
-                name: `Version ${versions.length + 1}`,
+            const current = recipes[currentRecipe].versions[currentVersion];
+            recipes[currentRecipe].versions.push({
+                name: `Version ${recipes[currentRecipe].versions.length + 1}`,
                 batchSize: current.batchSize,
                 ingredients: JSON.parse(JSON.stringify(current.ingredients))
             });
-            currentVersion = versions.length - 1;
-            saveVersions();
-            renderTabs();
+            currentVersion = recipes[currentRecipe].versions.length - 1;
+            saveRecipes();
+            renderVersionTabs();
+            renderIngredients();
+            updateIngredients();
+        }
+
+        function deleteRecipe(index) {
+            if (recipes.length <= 1) {
+                alert("You must keep at least one recipe.");
+                return;
+            }
+
+            recipes.splice(index, 1);
+            if (currentRecipe >= recipes.length) {
+                currentRecipe = recipes.length - 1;
+            }
+            currentVersion = 0;
+            saveRecipes();
+            renderRecipeTabs();
+            renderVersionTabs();
             renderIngredients();
             updateIngredients();
         }
 
         function deleteVersion(index) {
-            if (versions.length <= 1) {
+            if (recipes[currentRecipe].versions.length <= 1) {
                 alert("You must keep at least one version.");
                 return;
             }
 
-            versions.splice(index, 1);
-            if (currentVersion >= versions.length) {
-                currentVersion = versions.length - 1;
+            recipes[currentRecipe].versions.splice(index, 1);
+            if (currentVersion >= recipes[currentRecipe].versions.length) {
+                currentVersion = recipes[currentRecipe].versions.length - 1;
             }
-            saveVersions();
-            renderTabs();
+            saveRecipes();
+            renderVersionTabs();
             renderIngredients();
             updateIngredients();
         }
 
-        function clearVersions() {
-            if (confirm("Are you sure you want to clear all versions? This will reset the calculator to a single default version.")) {
-                versions = [{
-                    name: `Version 1`,
-                    batchSize: 5,
-                    ingredients: {
-                        groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75, isMeat: true },
-                        groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25, isMeat: true },
-                        salt: { name: "Salt", percentage: 2 },
-                        dextrose: { name: "Dextrose", percentage: 0.7 },
-                        picklingSpice: { name: "Pickling Spice", percentage: 0.25 },
-                        blackPepper: { name: "Black Pepper", percentage: 0.25 },
-                        garlic: { name: "Fresh Garlic, minced", percentage: 0.5 },
-                        coriander: { name: "Coriander Seed, ground", percentage: 0.25 },
-                        mustardSeed: { name: "Mustard Seed, whole", percentage: 0.3 },
-                        sodiumErythorbate: { name: "Sodium Erythorbate", percentage: 0.05 },
-                        cure1: { name: "Cure #1", percentage: 0.25 },
-                        tspx: { name: "T-SPX Starter Culture", percentage: 0.025 },
-                        distilledWater: { name: "Distilled Water", percentage: 10 }
-                    }
+        function clearRecipes() {
+            if (confirm("Are you sure you want to clear all recipes? This will reset the calculator to a single default recipe.")) {
+                recipes = [{
+                    name: "Summer Sausage",
+                    versions: [{
+                        name: "Version 1",
+                        batchSize: 5,
+                        ingredients: JSON.parse(JSON.stringify(defaultIngredients))
+                    }]
                 }];
+                currentRecipe = 0;
                 currentVersion = 0;
-                saveVersions();
-                renderTabs();
+                saveRecipes();
+                renderRecipeTabs();
+                renderVersionTabs();
                 renderIngredients();
                 updateIngredients();
             }
         }
 
-        function saveVersions() {
-            localStorage.setItem('sausageVersions', JSON.stringify(versions));
+        function clearVersions() {
+            if (confirm("Are you sure you want to clear all versions for this recipe? This will reset the recipe to a single default version.")) {
+                recipes[currentRecipe].versions = [{
+                    name: "Version 1",
+                    batchSize: 5,
+                    ingredients: JSON.parse(JSON.stringify(defaultIngredients))
+                }];
+                currentVersion = 0;
+                saveRecipes();
+                renderVersionTabs();
+                renderIngredients();
+                updateIngredients();
+            }
+        }
+
+        function resetInstructions() {
+            if (confirm("Are you sure you want to reset the instructions to their default values? This will clear any edits you made.")) {
+                Object.keys(defaultInstructions).forEach(stepId => {
+                    const element = document.getElementById(stepId);
+                    element.innerHTML = defaultInstructions[stepId];
+                    localStorage.setItem(stepId, defaultInstructions[stepId]);
+                });
+                localStorage.removeItem('mixIngredientsListEdited');
+                updateInstructions();
+            }
+        }
+
+        function saveRecipes() {
+            localStorage.setItem('sausageRecipes', JSON.stringify(recipes));
         }
     </script>
 </body>
