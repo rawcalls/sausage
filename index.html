@@ -252,6 +252,28 @@
             border-radius: 5px;
             font-weight: bold;
         }
+        .edit-step, .delete-step {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .edit-step {
+            background-color: #2196F3;
+            color: white;
+        }
+        .edit-step:hover {
+            background-color: #1976D2;
+        }
+        .delete-step {
+            background-color: #ff4444;
+            color: white;
+        }
+        .delete-step:hover {
+            background-color: #cc0000;
+        }
     </style>
 </head>
 <body>
@@ -302,56 +324,9 @@
     <div class="directions">
         <h2>Instructions</h2>
         <ol id="instructionsList">
-            <li><strong>Prepare Ingredients:</strong>
-                <ul contenteditable="true" id="prepareIngredientsList">
-                    <li>Chill ground beef chuck and pork butt to 35–40°F (2–4°C) to ensure safety and ease of mixing.</li>
-                    <li>Soak muslin casings in lukewarm water for 1–2 hours to soften, ensuring they’re pliable for stuffing and smoke penetration. Rinse well and keep damp until use.</li>
-                    <li>Dissolve T-SPX starter culture (adjusted quantity) in 1/4 cup distilled water and let sit for 10 minutes to activate.</li>
-                </ul>
-            </li>
-            <li><strong>Mix Seasonings and Meat:</strong>
-                <ul contenteditable="true" id="mixIngredientsList">
-                </ul>
-            </li>
-            <li><strong>Stuff Sausages:</strong>
-                <ul contenteditable="true" id="stuffSausagesList">
-                    <li>Load the sausage stuffer with the meat mixture, avoiding air pockets.</li>
-                    <li>Stuff into muslin casings, forming 10–12 inch logs or as desired (muslin casings are typically larger, often 2–3 inches in diameter). Tie ends securely with butcher’s twine, ensuring a tight pack to prevent air gaps. Prick any air bubbles with a sterile pin.</li>
-                </ul>
-            </li>
-            <li><strong>Fermentation During Cold Smoking:</strong>
-                <ul contenteditable="true" id="fermentationList">
-                    <li>Hang sausages in a smoker set to 75°F (24°C) with 80–85% relative humidity. Apply light, consistent smoke using hardwood (e.g., hickory or applewood) for 60 hours.</li>
-                    <li>The T-SPX culture and dextrose will ferment slowly, lowering the pH to ~5.0–5.1. Ensure good airflow to support fermentation and smoke penetration through the muslin casings.</li>
-                    <li>After 60 hours, check pH with a meter or test strips to confirm it’s near 5.0–5.1.</li>
-                </ul>
-            </li>
-            <li><strong>Hot Smoking:</strong>
-                <ul contenteditable="true" id="hotSmokingList">
-                    <li>Gradually increase smoker temperature by 10°F per hour, starting from 75°F to 160°F (71°C), maintaining light smoke and 70–80% humidity to prevent case hardening.</li>
-                    <li>Smoke until the internal temperature reaches 148°F (64°C), typically 8–9 hours (75°F to 160°F = 85°F, at 10°F/hour). Monitor with a probe thermometer inserted through the muslin casing.</li>
-                    <li>Verify pH post-hot smoking is ~5.0. If slightly above, extend hot smoking at 148°F for 1–2 hours and recheck.</li>
-                </ul>
-            </li>
-            <li><strong>Cooling:</strong>
-                <ul contenteditable="true" id="coolingList">
-                    <li>Immediately place sausages in an ice-water bath to cool below 120°F (49°C) to stop cooking and ensure food safety. Muslin casings can be left on during cooling.</li>
-                    <li>Pat dry and let rest at room temperature for 1–2 hours to stabilize.</li>
-                </ul>
-            </li>
-            <li><strong>Storage:</strong>
-                <ul contenteditable="true" id="storageList">
-                    <li>Remove muslin casings after cooling, or leave on if preferred for storage (they can be peeled off before consumption). Vacuum-seal or wrap tightly and refrigerate at 35–40°F (2–4°C) for up to 2 weeks or freeze for up to 6 months.</li>
-                </ul>
-            </li>
         </ol>
         <h3>Notes</h3>
         <ul contenteditable="true" id="notesList">
-            <li><strong>Fat Content:</strong> Yields 27.5% total fat for better texture.</li>
-            <li><strong>T-SPX:</strong> Mimics Nebraska’s wild fermentation.</li>
-            <li><strong>Dextrose:</strong> Adjust to 0.6% if pH drops below 4.8, or 0.8% if above 5.0.</li>
-            <li><strong>Safety:</strong> Cure #1 prevents botulism. Hot smoking to 148°F is safe, though 150°F is more conservative.</li>
-            <li><strong>Nebraska Climate:</strong> Use a humidifier to maintain 80–85% humidity during cold smoking.</li>
         </ul>
         <button class="reset-button" onclick="resetInstructions()">Reset Instructions</button>
     </div>
@@ -371,6 +346,65 @@
         let currentRecipe = 0;
         let currentVersion = 0;
 
+        const defaultInstructions = [
+            {
+                title: "Prepare Ingredients",
+                content: `
+                    <li>Chill ground beef chuck and pork butt to 35–40°F (2–4°C) to ensure safety and ease of mixing.</li>
+                    <li>Soak muslin casings in lukewarm water for 1–2 hours to soften, ensuring they’re pliable for stuffing and smoke penetration. Rinse well and keep damp until use.</li>
+                    <li>Dissolve T-SPX starter culture (adjusted quantity) in 1/4 cup distilled water and let sit for 10 minutes to activate.</li>
+                `
+            },
+            {
+                title: "Mix Seasonings and Meat",
+                content: ""
+            },
+            {
+                title: "Stuff Sausages",
+                content: `
+                    <li>Load the sausage stuffer with the meat mixture, avoiding air pockets.</li>
+                    <li>Stuff into muslin casings, forming 10–12 inch logs or as desired (muslin casings are typically larger, often 2–3 inches in diameter). Tie ends securely with butcher’s twine, ensuring a tight pack to prevent air gaps. Prick any air bubbles with a sterile pin.</li>
+                `
+            },
+            {
+                title: "Fermentation During Cold Smoking",
+                content: `
+                    <li>Hang sausages in a smoker set to 75°F (24°C) with 80–85% relative humidity. Apply light, consistent smoke using hardwood (e.g., hickory or applewood) for 60 hours.</li>
+                    <li>The T-SPX culture and dextrose will ferment slowly, lowering the pH to ~5.0–5.1. Ensure good airflow to support fermentation and smoke penetration through the muslin casings.</li>
+                    <li>After 60 hours, check pH with a meter or test strips to confirm it’s near 5.0–5.1.</li>
+                `
+            },
+            {
+                title: "Hot Smoking",
+                content: `
+                    <li>Gradually increase smoker temperature by 10°F per hour, starting from 75°F to 160°F (71°C), maintaining light smoke and 70–80% humidity to prevent case hardening.</li>
+                    <li>Smoke until the internal temperature reaches 148°F (64°C), typically 8–9 hours (75°F to 160°F = 85°F, at 10°F/hour). Monitor with a probe thermometer inserted through the muslin casing.</li>
+                    <li>Verify pH post-hot smoking is ~5.0. If slightly above, extend hot smoking at 148°F for 1–2 hours and recheck.</li>
+                `
+            },
+            {
+                title: "Cooling",
+                content: `
+                    <li>Immediately place sausages in an ice-water bath to cool below 120°F (49°C) to stop cooking and ensure food safety. Muslin casings can be left on during cooling.</li>
+                    <li>Pat dry and let rest at room temperature for 1–2 hours to stabilize.</li>
+                `
+            },
+            {
+                title: "Storage",
+                content: `
+                    <li>Remove muslin casings after cooling, or leave on if preferred for storage (they can be peeled off before consumption). Vacuum-seal or wrap tightly and refrigerate at 35–40°F (2–4°C) for up to 2 weeks or freeze for up to 6 months.</li>
+                `
+            }
+        ];
+
+        const defaultNotes = `
+            <li><strong>Fat Content:</strong> Yields 27.5% total fat for better texture.</li>
+            <li><strong>T-SPX:</strong> Mimics Nebraska’s wild fermentation.</li>
+            <li><strong>Dextrose:</strong> Adjust to 0.6% if pH drops below 4.8, or 0.8% if above 5.0.</li>
+            <li><strong>Safety:</strong> Cure #1 prevents botulism. Hot smoking to 148°F is safe, though 150°F is more conservative.</li>
+            <li><strong>Nebraska Climate:</strong> Use a humidifier to maintain 80–85% humidity during cold smoking.</li>
+        `;
+
         const defaultIngredients = {
             groundBeefChuck: { name: "Ground Beef Chuck", percentage: 75, isMeat: true, leanRatio: 70, fatRatio: 30 },
             groundPorkButt: { name: "Ground Pork Butt", percentage: 25, isMeat: true, leanRatio: 80, fatRatio: 20 },
@@ -387,43 +421,6 @@
             distilledWater: { name: "Distilled Water", percentage: 10 }
         };
 
-        const defaultInstructions = {
-            prepareIngredientsList: `
-                <li>Chill ground beef chuck and pork butt to 35–40°F (2–4°C) to ensure safety and ease of mixing.</li>
-                <li>Soak muslin casings in lukewarm water for 1–2 hours to soften, ensuring they’re pliable for stuffing and smoke penetration. Rinse well and keep damp until use.</li>
-                <li>Dissolve T-SPX starter culture (adjusted quantity) in 1/4 cup distilled water and let sit for 10 minutes to activate.</li>
-            `,
-            mixIngredientsList: "",
-            stuffSausagesList: `
-                <li>Load the sausage stuffer with the meat mixture, avoiding air pockets.</li>
-                <li>Stuff into muslin casings, forming 10–12 inch logs or as desired (muslin casings are typically larger, often 2–3 inches in diameter). Tie ends securely with butcher’s twine, ensuring a tight pack to prevent air gaps. Prick any air bubbles with a sterile pin.</li>
-            `,
-            fermentationList: `
-                <li>Hang sausages in a smoker set to 75°F (24°C) with 80–85% relative humidity. Apply light, consistent smoke using hardwood (e.g., hickory or applewood) for 60 hours.</li>
-                <li>The T-SPX culture and dextrose will ferment slowly, lowering the pH to ~5.0–5.1. Ensure good airflow to support fermentation and smoke penetration through the muslin casings.</li>
-                <li>After 60 hours, check pH with a meter or test strips to confirm it’s near 5.0–5.1.</li>
-            `,
-            hotSmokingList: `
-                <li>Gradually increase smoker temperature by 10°F per hour, starting from 75°F to 160°F (71°C), maintaining light smoke and 70–80% humidity to prevent case hardening.</li>
-                <li>Smoke until the internal temperature reaches 148°F (64°C), typically 8–9 hours (75°F to 160°F = 85°F, at 10°F/hour). Monitor with a probe thermometer inserted through the muslin casing.</li>
-                <li>Verify pH post-hot smoking is ~5.0. If slightly above, extend hot smoking at 148°F for 1–2 hours and recheck.</li>
-            `,
-            coolingList: `
-                <li>Immediately place sausages in an ice-water bath to cool below 120°F (49°C) to stop cooking and ensure food safety. Muslin casings can be left on during cooling.</li>
-                <li>Pat dry and let rest at room temperature for 1–2 hours to stabilize.</li>
-            `,
-            storageList: `
-                <li>Remove muslin casings after cooling, or leave on if preferred for storage (they can be peeled off before consumption). Vacuum-seal or wrap tightly and refrigerate at 35–40°F (2–4°C) for up to 2 weeks or freeze for up to 6 months.</li>
-            `,
-            notesList: `
-                <li><strong>Fat Content:</strong> Yields 27.5% total fat for better texture.</li>
-                <li><strong>T-SPX:</strong> Mimics Nebraska’s wild fermentation.</li>
-                <li><strong>Dextrose:</strong> Adjust to 0.6% if pH drops below 4.8, or 0.8% if above 5.0.</li>
-                <li><strong>Safety:</strong> Cure #1 prevents botulism. Hot smoking to 148°F is safe, though 150°F is more conservative.</li>
-                <li><strong>Nebraska Climate:</strong> Use a humidifier to maintain 80–85% humidity during cold smoking.</li>
-            `
-        };
-
         document.addEventListener('DOMContentLoaded', function() {
             try {
                 console.log("DOMContentLoaded triggered");
@@ -438,7 +435,9 @@
                         versions: [{
                             name: "Version 1",
                             batchSize: 5,
-                            ingredients: JSON.parse(JSON.stringify(defaultIngredients))
+                            ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
+                            instructions: JSON.parse(JSON.stringify(defaultInstructions)),
+                            notes: defaultNotes
                         }]
                     });
                 }
@@ -446,26 +445,11 @@
                 currentVersion = 0;
                 console.log("Current recipe:", currentRecipe, "Current version:", currentVersion);
 
-                Object.keys(defaultInstructions).forEach(stepId => {
-                    const savedContent = localStorage.getItem(stepId);
-                    const element = document.getElementById(stepId);
-                    if (savedContent) {
-                        element.innerHTML = savedContent;
-                    } else {
-                        element.innerHTML = defaultInstructions[stepId];
-                    }
-                    element.addEventListener('input', function() {
-                        localStorage.setItem(stepId, this.innerHTML);
-                        if (stepId === 'mixIngredientsList') {
-                            localStorage.setItem('mixIngredientsListEdited', 'true');
-                        }
-                    });
-                });
-
                 renderRecipeTabs();
                 renderVersionTabs();
                 loadVersion(currentVersion);
                 renderIngredients();
+                renderInstructions();
                 updateIngredients();
                 updatePageTitle();
             } catch (error) {
@@ -478,6 +462,69 @@
             const versionName = recipes[currentRecipe].versions[currentVersion].name;
             const pageTitle = document.getElementById('pageTitle');
             pageTitle.textContent = `${recipeName}/${versionName} Calculator`;
+        }
+
+        function renderInstructions() {
+            const instructionsList = document.getElementById('instructionsList');
+            instructionsList.innerHTML = '';
+
+            const version = recipes[currentRecipe].versions[currentVersion];
+            version.instructions.forEach((step, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <strong>${step.title}</strong>
+                    <button class="edit-step" onclick="editStep(${index})">Edit</button>
+                    <button class="delete-step" onclick="deleteStep(${index})">Delete</button>
+                    <ul contenteditable="true" class="step-content" data-index="${index}">
+                        ${step.content || '<li>Enter details here.</li>'}
+                    </ul>
+                `;
+                instructionsList.appendChild(li);
+
+                const contentElement = li.querySelector('.step-content');
+                contentElement.addEventListener('input', function() {
+                    version.instructions[index].content = this.innerHTML;
+                    saveRecipes();
+                });
+            });
+
+            const notesList = document.getElementById('notesList');
+            notesList.innerHTML = version.notes || defaultNotes;
+            notesList.addEventListener('input', function() {
+                version.notes = this.innerHTML;
+                saveRecipes();
+            });
+
+            const deleteButtons = document.querySelectorAll('.delete-step');
+            if (version.instructions.length <= 1) {
+                deleteButtons.forEach(btn => btn.disabled = true);
+            } else {
+                deleteButtons.forEach(btn => btn.disabled = false);
+            }
+        }
+
+        function editStep(index) {
+            const version = recipes[currentRecipe].versions[currentVersion];
+            const step = version.instructions[index];
+            const newTitle = prompt("Enter the new title for this step:", step.title);
+            if (newTitle && newTitle.trim() !== "") {
+                version.instructions[index].title = newTitle.trim();
+                saveRecipes();
+                renderInstructions();
+            }
+        }
+
+        function deleteStep(index) {
+            const version = recipes[currentRecipe].versions[currentVersion];
+            if (version.instructions.length <= 1) {
+                alert("You must keep at least one instruction step.");
+                return;
+            }
+            if (confirm("Are you sure you want to delete this step?")) {
+                version.instructions.splice(index, 1);
+                saveRecipes();
+                renderInstructions();
+            }
         }
 
         function renderIngredients() {
@@ -745,6 +792,7 @@
             renderVersionTabs();
             loadVersion(currentVersion);
             renderIngredients();
+            renderInstructions();
             updateIngredients();
             updatePageTitle();
         }
@@ -755,6 +803,7 @@
             renderVersionTabs();
             loadVersion(currentVersion);
             renderIngredients();
+            renderInstructions();
             updateIngredients();
             updatePageTitle();
         }
@@ -789,18 +838,17 @@
         }
 
         function updateInstructions() {
-            const mixList = document.getElementById('mixIngredientsList');
-            if (!mixList) {
-                console.error("mixIngredientsList element not found");
-                return;
-            }
+            const version = recipes[currentRecipe].versions[currentVersion];
+            const mixIndex = version.instructions.findIndex(step => step.title.toLowerCase().includes("mix seasonings and meat"));
+            if (mixIndex === -1) return;
 
-            const isEdited = localStorage.getItem('mixIngredientsListEdited') === 'true';
+            const mixContent = version.instructions[mixIndex].content;
+            const isEdited = mixContent.trim() !== "" && mixContent !== "<li>Enter details here.</li>";
+
             if (isEdited) return;
 
-            mixList.innerHTML = '';
-
-            const ingredients = recipes[currentRecipe].versions[currentVersion].ingredients;
+            let newContent = '';
+            const ingredients = version.ingredients;
             const meats = [];
             const seasonings = [];
             Object.values(ingredients).forEach(ingredient => {
@@ -812,25 +860,21 @@
             });
 
             if (meats.length > 0) {
-                const li1 = document.createElement('li');
-                li1.textContent = `In a large, chilled bowl, combine ${meats.join(' and ')} (quantities as calculated).`;
-                mixList.appendChild(li1);
+                newContent += `<li>In a large, chilled bowl, combine ${meats.join(' and ')} (quantities as calculated).</li>`;
             }
 
             if (seasonings.length > 0) {
-                const li2 = document.createElement('li');
-                li2.textContent = `Add ${seasonings.join(', ')} (quantities as calculated). Mix thoroughly by hand or with a stand mixer for 1–2 minutes until evenly distributed.`;
-                mixList.appendChild(li2);
+                newContent += `<li>Add ${seasonings.join(', ')} (quantities as calculated). Mix thoroughly by hand or with a stand mixer for 1–2 minutes until evenly distributed.</li>`;
             }
 
             const tspx = Object.values(ingredients).find(ing => ing.name.toLowerCase().includes('t-spx'));
             if (tspx) {
-                const li3 = document.createElement('li');
-                li3.textContent = `Add activated T-SPX slurry and remaining distilled water (adjusted quantity minus the 1/4 cup used for culture). Mix until the meat becomes sticky and cohesive (about 1–2 minutes) to ensure proper binding and culture distribution.`;
-                mixList.appendChild(li3);
+                newContent += `<li>Add activated T-SPX slurry and remaining distilled water (adjusted quantity minus the 1/4 cup used for culture). Mix until the meat becomes sticky and cohesive (about 1–2 minutes) to ensure proper binding and culture distribution.</li>`;
             }
 
-            localStorage.setItem('mixIngredientsList', mixList.innerHTML);
+            version.instructions[mixIndex].content = newContent;
+            saveRecipes();
+            renderInstructions();
         }
 
         function updateIngredients() {
@@ -882,7 +926,9 @@
                 recipes[currentRecipe].versions[currentVersion] = {
                     name: recipes[currentRecipe].versions[currentVersion].name,
                     batchSize: batchSize,
-                    ingredients: ingredients
+                    ingredients: ingredients,
+                    instructions: recipes[currentRecipe].versions[currentVersion].instructions,
+                    notes: recipes[currentRecipe].versions[currentVersion].notes
                 };
                 console.log("Updated recipes:", recipes);
 
@@ -997,7 +1043,9 @@
                 versions: [{
                     name: "Version 1",
                     batchSize: 5,
-                    ingredients: JSON.parse(JSON.stringify(defaultIngredients))
+                    ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
+                    instructions: JSON.parse(JSON.stringify(defaultInstructions)),
+                    notes: defaultNotes
                 }]
             });
             currentRecipe = recipes.length - 1;
@@ -1006,6 +1054,7 @@
             renderRecipeTabs();
             renderVersionTabs();
             renderIngredients();
+            renderInstructions();
             updateIngredients();
             updatePageTitle();
         }
@@ -1015,12 +1064,15 @@
             recipes[currentRecipe].versions.push({
                 name: `Version ${recipes[currentRecipe].versions.length + 1}`,
                 batchSize: current.batchSize,
-                ingredients: JSON.parse(JSON.stringify(current.ingredients))
+                ingredients: JSON.parse(JSON.stringify(current.ingredients)),
+                instructions: JSON.parse(JSON.stringify(current.instructions)),
+                notes: current.notes
             });
             currentVersion = recipes[currentRecipe].versions.length - 1;
             saveRecipes();
             renderVersionTabs();
             renderIngredients();
+            renderInstructions();
             updateIngredients();
             updatePageTitle();
         }
@@ -1040,6 +1092,7 @@
             renderRecipeTabs();
             renderVersionTabs();
             renderIngredients();
+            renderInstructions();
             updateIngredients();
             updatePageTitle();
         }
@@ -1057,6 +1110,7 @@
             saveRecipes();
             renderVersionTabs();
             renderIngredients();
+            renderInstructions();
             updateIngredients();
             updatePageTitle();
         }
@@ -1068,7 +1122,9 @@
                     versions: [{
                         name: "Version 1",
                         batchSize: 5,
-                        ingredients: JSON.parse(JSON.stringify(defaultIngredients))
+                        ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
+                        instructions: JSON.parse(JSON.stringify(defaultInstructions)),
+                        notes: defaultNotes
                     }]
                 }];
                 currentRecipe = 0;
@@ -1077,6 +1133,7 @@
                 renderRecipeTabs();
                 renderVersionTabs();
                 renderIngredients();
+                renderInstructions();
                 updateIngredients();
                 updatePageTitle();
             }
@@ -1087,12 +1144,15 @@
                 recipes[currentRecipe].versions = [{
                     name: "Version 1",
                     batchSize: 5,
-                    ingredients: JSON.parse(JSON.stringify(defaultIngredients))
+                    ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
+                    instructions: JSON.parse(JSON.stringify(defaultInstructions)),
+                    notes: defaultNotes
                 }];
                 currentVersion = 0;
                 saveRecipes();
                 renderVersionTabs();
                 renderIngredients();
+                renderInstructions();
                 updateIngredients();
                 updatePageTitle();
             }
@@ -1100,13 +1160,11 @@
 
         function resetInstructions() {
             if (confirm("Are you sure you want to reset the instructions to their default values? This will clear any edits you made.")) {
-                Object.keys(defaultInstructions).forEach(stepId => {
-                    const element = document.getElementById(stepId);
-                    element.innerHTML = defaultInstructions[stepId];
-                    localStorage.setItem(stepId, defaultInstructions[stepId]);
-                });
-                localStorage.removeItem('mixIngredientsListEdited');
-                updateInstructions();
+                const version = recipes[currentRecipe].versions[currentVersion];
+                version.instructions = JSON.parse(JSON.stringify(defaultInstructions));
+                version.notes = defaultNotes;
+                saveRecipes();
+                renderInstructions();
             }
         }
 
