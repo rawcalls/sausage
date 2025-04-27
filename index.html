@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grandpa's Summer Sausage Calculator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -31,13 +32,16 @@
             font-weight: bold;
             margin-right: 10px;
         }
-        input[type="number"], input[type="text"] {
+        input[type="number"], input[type="text"], input[type="file"] {
             padding: 5px;
             width: 80px;
             font-size: 16px;
         }
         input[type="text"] {
             width: 150px;
+        }
+        input[type="file"] {
+            width: auto;
         }
         .ingredient {
             margin: 5px 0;
@@ -163,7 +167,7 @@
         .delete-tab:hover {
             background-color: #cc0000;
         }
-        .clear-button, .reset-button {
+        .clear-button, .reset-button, .export-button, .import-button {
             padding: 8px 16px;
             color: white;
             border: none;
@@ -187,6 +191,18 @@
         }
         .reset-button:hover {
             background-color: #e68900;
+        }
+        .export-button {
+            background-color: #4CAF50;
+        }
+        .export-button:hover {
+            background-color: #45a049;
+        }
+        .import-button {
+            background-color: #2196F3;
+        }
+        .import-button:hover {
+            background-color: #1976D2;
         }
         [contenteditable="true"] {
             border: 1px dashed #ccc;
@@ -305,7 +321,12 @@
 
     <div class="button-section" style="text-align: center; margin: 10px 0;">
         <button onclick="updateIngredients()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">Calculate</button>
-        <button onclick="exportToExcel()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">Export to Excel</button>
+        <button onclick="exportToExcel()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">Export to Excel</button>
+        <button class="export-button" onclick="exportRecipe()">Export Recipe</button>
+        <label class="import-button">
+            Import Recipe
+            <input type="file" id="importRecipeInput" accept=".json" onchange="importRecipe()" style="display: none;">
+        </label>
     </div>
 
     <table id="ingredientTable">
@@ -341,7 +362,7 @@
         </div>
     </div>
 
-    <script>
+    <    <script>
         let recipes = [];
         let currentRecipe = 0;
         let currentVersion = 0;
@@ -1035,6 +1056,74 @@
 
             XLSX.utils.book_append_sheet(wb, ws, "Recipe");
             XLSX.writeFile(wb, `Sausage_Recipe_${recipes[currentRecipe].name}_${recipes[currentRecipe].versions[currentVersion].name}.xlsx`);
+        }
+
+        function exportRecipe() {
+            const recipeToExport = recipes[currentRecipe];
+            const recipeJSON = JSON.stringify(recipeToExport, null, 2);
+            const blob = new Blob([recipeJSON], { type: 'application/json' });
+            saveAs(blob, `${recipeToExport.name}_recipe.json`);
+        }
+
+        function importRecipe() {
+            const input = document.getElementById('importRecipeInput');
+            const file = input.files[0];
+            if (!file) {
+                alert("Please select a file to import.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedRecipe = JSON.parse(e.target.result);
+                    
+                    // Validate the imported recipe structure
+                    if (!importedRecipe.name || !Array.isArray(importedRecipe.versions) || importedRecipe.versions.length === 0) {
+                        throw new Error("Invalid recipe format: Missing name or versions.");
+                    }
+
+                    importedRecipe.versions.forEach(version => {
+                        if (!version.name || !version.batchSize || !version.ingredients || !Array.isArray(version.instructions)) {
+                            throw new Error("Invalid version format: Missing required fields.");
+                        }
+                    });
+
+                    // Check for duplicate recipe names and append a suffix if necessary
+                    let newRecipeName = importedRecipe.name;
+                    let suffix = 1;
+                    while (recipes.some(recipe => recipe.name === newRecipeName)) {
+                        newRecipeName = `${importedRecipe.name} (${suffix})`;
+                        suffix++;
+                    }
+                    importedRecipe.name = newRecipeName;
+
+                    // Add the imported recipe to the list
+                    recipes.push(importedRecipe);
+                    currentRecipe = recipes.length - 1;
+                    currentVersion = 0;
+
+                    saveRecipes();
+                    renderRecipeTabs();
+                    renderVersionTabs();
+                    renderIngredients();
+                    renderInstructions();
+                    updateIngredients();
+                    updatePageTitle();
+
+                    alert(`Recipe "${newRecipeName}" imported successfully!`);
+                } catch (error) {
+                    console.error("Error importing recipe:", error);
+                    alert("Failed to import recipe: " + error.message);
+                }
+            };
+            reader.onerror = function() {
+                alert("Error reading the file.");
+            };
+            reader.readAsText(file);
+
+            // Reset the input field
+            input.value = '';
         }
 
         function addRecipe() {
