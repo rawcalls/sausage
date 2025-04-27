@@ -426,4 +426,361 @@
             if (!name || name.trim() === "") return;
 
             const cleanName = name.trim();
-            const key
+            const key = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const ingredients = versions[currentVersion].ingredients;
+
+            if (ingredients[key]) {
+                alert("An ingredient with this name already exists.");
+                return;
+            }
+
+            const isMeat = await showMeatPrompt();
+            ingredients[key] = { name: cleanName, percentage: 0, isMeat: isMeat };
+            renderIngredients();
+            updateIngredients();
+        }
+
+        function deleteIngredient(key) {
+            const ingredients = versions[currentVersion].ingredients;
+            if (Object.keys(ingredients).length <= 1) {
+                alert("You must keep at least one ingredient.");
+                return;
+            }
+
+            delete ingredients[key];
+            renderIngredients();
+            updateIngredients();
+        }
+
+        function renderTabs() {
+            const tabsContainer = document.getElementById('versionTabs');
+            tabsContainer.innerHTML = '';
+
+            versions.forEach((version, index) => {
+                const tab = document.createElement('button');
+                tab.className = 'tab' + (index === currentVersion ? ' active' : '');
+                tab.textContent = `${version.name} (${version.batchSize} lbs)`;
+                
+                tab.onclick = (e) => {
+                    if (e.shiftKey) {
+                        renameVersion(index);
+                    } else {
+                        switchVersion(index);
+                    }
+                };
+
+                let pressTimer;
+                tab.addEventListener('touchstart', (e) => {
+                    pressTimer = setTimeout(() => {
+                        e.preventDefault();
+                        renameVersion(index);
+                    }, 1000);
+                });
+                tab.addEventListener('touchend', () => clearTimeout(pressTimer));
+                tab.addEventListener('touchcancel', () => clearTimeout(pressTimer));
+
+                tabsContainer.appendChild(tab);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete-tab';
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = () => deleteVersion(index);
+                tabsContainer.appendChild(deleteButton);
+            });
+
+            const addTab = document.createElement('button');
+            addTab.className = 'tab add';
+            addTab.textContent = '+';
+            addTab.onclick = addVersion;
+            tabsContainer.appendChild(addTab);
+
+            const clearButton = document.createElement('button');
+            clearButton.className = 'clear-button';
+            clearButton.textContent = 'Clear All Versions';
+            clearButton.onclick = clearVersions;
+            tabsContainer.appendChild(clearButton);
+        }
+
+        function renameVersion(index) {
+            const newName = prompt("Enter a new name for this version:", versions[index].name);
+            if (newName && newName.trim() !== "") {
+                versions[index].name = newName.trim();
+                saveVersions();
+                renderTabs();
+            }
+        }
+
+        function switchVersion(index) {
+            currentVersion = index;
+            loadVersion(index);
+            renderTabs();
+            renderIngredients();
+            updateIngredients();
+        }
+
+        function loadVersion(index) {
+            const version = versions[index];
+            document.getElementById('batchSize').value = version.batchSize;
+            Object.keys(version.ingredients).forEach(key => {
+                const input = document.getElementById(key);
+                if (input) {
+                    input.value = version.ingredients[key].percentage;
+                }
+            });
+        }
+
+        function updateInstructions() {
+            const ingredients = versions[currentVersion].ingredients;
+            const mixList = document.getElementById('mixIngredientsList');
+            if (!mixList) {
+                console.error("mixIngredientsList element not found");
+                return;
+            }
+            mixList.innerHTML = '';
+
+            const meats = [];
+            const seasonings = [];
+            Object.values(ingredients).forEach(ingredient => {
+                if (ingredient.isMeat) {
+                    meats.push(ingredient.name);
+                } else if (!ingredient.name.toLowerCase().includes('t-spx') && !ingredient.name.toLowerCase().includes('distilled water')) {
+                    seasonings.push(ingredient.name);
+                }
+            });
+
+            if (meats.length > 0) {
+                const li1 = document.createElement('li');
+                li1.textContent = `In a large, chilled bowl, combine ${meats.join(' and ')} (quantities as calculated).`;
+                mixList.appendChild(li1);
+            }
+
+            if (seasonings.length > 0) {
+                const li2 = document.createElement('li');
+                li2.textContent = `Add ${seasonings.join(', ')} (quantities as calculated). Mix thoroughly by hand or with a stand mixer for 1–2 minutes until evenly distributed.`;
+                mixList.appendChild(li2);
+            }
+
+            const tspx = Object.values(ingredients).find(ing => ing.name.toLowerCase().includes('t-spx'));
+            if (tspx) {
+                const li3 = document.createElement('li');
+                li3.textContent = `Add activated T-SPX slurry and remaining distilled water (adjusted quantity minus the 1/4 cup used for culture). Mix until the meat becomes sticky and cohesive (about 1–2 minutes) to ensure proper binding and culture distribution.`;
+                mixList.appendChild(li3);
+            }
+        }
+
+        function updateIngredients() {
+            try {
+                console.log("updateIngredients called");
+                const batchSizeElement = document.getElementById('batchSize');
+                if (!batchSizeElement) throw new Error("Batch size element not found");
+                const batchSize = parseFloat(batchSizeElement.value);
+                console.log("Batch size:", batchSize);
+                if (isNaN(batchSize) || batchSize <= 0) {
+                    console.log("Invalid batch size, aborting");
+                    alert("Please enter a valid batch size greater than 0.");
+                    return;
+                }
+
+                const ingredients = {};
+                const ingredientList = document.getElementById('ingredientList').children;
+                for (let div of ingredientList) {
+                    const input = div.querySelector('input[type="number"]');
+                    const key = input.id;
+                    const percentage = parseFloat(input.value);
+                    const existing = versions[currentVersion].ingredients[key];
+                    const isMeat = existing.isMeat !== undefined ? existing.isMeat : (existing.name.toLowerCase().includes('beef') || existing.name.toLowerCase().includes('pork'));
+                    ingredients[key] = {
+                        name: existing.name,
+                        percentage: percentage,
+                        isMeat: isMeat
+                    };
+                }
+                console.log("Ingredients collected:", ingredients);
+
+                Object.values(ingredients).forEach(ingredient => {
+                    if (isNaN(ingredient.percentage) || ingredient.percentage === undefined) {
+                        throw new Error(`Invalid percentage for ${ingredient.name}`);
+                    }
+                });
+
+                const meatTotal = Object.values(ingredients)
+                    .filter(ing => ing.isMeat)
+                    .reduce((sum, ing) => sum + ing.percentage, 0);
+                console.log("Meat total:", meatTotal);
+                if (Math.abs(meatTotal - 100) > 0.01) {
+                    console.log("Meat percentages do not add up to 100, aborting");
+                    alert("The percentages of meat ingredients (e.g., beef, pork) should add up to 100%.");
+                    return;
+                }
+
+                versions[currentVersion] = {
+                    name: versions[currentVersion].name,
+                    batchSize: batchSize,
+                    ingredients: ingredients
+                };
+                console.log("Updated versions:", versions);
+
+                const tbody = document.getElementById('ingredientBody');
+                if (!tbody) throw new Error("Ingredient table body not found");
+                tbody.innerHTML = '';
+                console.log("Cleared ingredient table");
+
+                Object.values(ingredients).forEach(ingredient => {
+                    const percentage = ingredient.percentage;
+                    const scaledAmount = (percentage / 100) * batchSize;
+                    const oz = scaledAmount * 16;
+                    const grams = scaledAmount * 453.592;
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${ingredient.name}</td>
+                        <td>${scaledAmount.toFixed(4)}</td>
+                        <td>${oz.toFixed(1)}</td>
+                        <td>${grams.toFixed(1)}</td>
+                        <td>${percentage.toFixed(2)}%</td>
+                    `;
+                    tbody.appendChild(row);
+                    console.log("Added row:", ingredient.name, scaledAmount, oz, grams, percentage);
+                });
+
+                updateInstructions();
+                saveVersions();
+                renderTabs();
+            } catch (error) {
+                console.error("Error in updateIngredients:", error.message, error.stack);
+            }
+        }
+
+        function exportToExcel() {
+            const batchSize = parseFloat(document.getElementById('batchSize').value);
+            const data = [
+                ["Ingredient", "Amount (lbs)", "Amount (oz)", "Amount (g)", "Percentage (%)"]
+            ];
+
+            const ingredients = versions[currentVersion].ingredients;
+            Object.values(ingredients).forEach(ingredient => {
+                const percentage = ingredient.percentage;
+                const scaledAmount = (percentage / 100) * batchSize;
+                const oz = scaledAmount * 16;
+                const grams = scaledAmount * 453.592;
+
+                data.push([
+                    ingredient.name,
+                    scaledAmount.toFixed(4),
+                    oz.toFixed(1),
+                    grams.toFixed(1),
+                    percentage.toFixed(2)
+                ]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data);
+
+            const colWidths = [
+                { wch: 25 },
+                { wch: 15 },
+                { wch: 15 },
+                { wch: 15 },
+                { wch: 15 }
+            ];
+            ws['!cols'] = colWidths) = colWidths;
+
+            data[0].forEach((_, colIndex) => {
+                const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIndex });
+                if (!ws[cellRef]) ws[cellRef] = { t: 's', v: data[0][colIndex] };
+                ws[cellRef].s = {
+                    font: { bold: true },
+                    alignment: { horizontal: "center" },
+                    border: {
+                        top: { style: "thin" },
+                        bottom: { style: "thin" },
+                        left: { style: "thin" },
+                        right: { style: "thin" }
+                    }
+                };
+            });
+
+            for (let row = 1; row < data.length; row++) {
+                for (let col = 0; col < data[row].length; col++) {
+                    const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+                    if (!ws[cellRef]) ws[cellRef] = { t: 's', v: data[row][col] };
+                    ws[cellRef].s = {
+                        border: {
+                            top: { style: "thin" },
+                            bottom: { style: "thin" },
+                            left: { style: "thin" },
+                            right: { style: "thin" }
+                        }
+                    };
+                }
+            }
+
+            XLSX.utils.book_append_sheet(wb, ws, "Recipe");
+            XLSX.writeFile(wb, `Sausage_Recipe_${versions[currentVersion].name}.xlsx`);
+        }
+
+        function addVersion() {
+            const current = versions[currentVersion];
+            versions.push({
+                name: `Version ${versions.length + 1}`,
+                batchSize: current.batchSize,
+                ingredients: JSON.parse(JSON.stringify(current.ingredients))
+            });
+            currentVersion = versions.length - 1;
+            saveVersions();
+            renderTabs();
+            renderIngredients();
+            updateIngredients();
+        }
+
+        function deleteVersion(index) {
+            if (versions.length <= 1) {
+                alert("You must keep at least one version.");
+                return;
+            }
+
+            versions.splice(index, 1);
+            if (currentVersion >= versions.length) {
+                currentVersion = versions.length - 1;
+            }
+            saveVersions();
+            renderTabs();
+            renderIngredients();
+            updateIngredients();
+        }
+
+        function clearVersions() {
+            if (confirm("Are you sure you want to clear all versions? This will reset the calculator to a single default version.")) {
+                versions = [{
+                    name: `Version 1`,
+                    batchSize: 5,
+                    ingredients: {
+                        groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75, isMeat: true },
+                        groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25, isMeat: true },
+                        salt: { name: "Salt", percentage: 2 },
+                        dextrose: { name: "Dextrose", percentage: 0.7 },
+                        picklingSpice: { name: "Pickling Spice", percentage: 0.25 },
+                        blackPepper: { name: "Black Pepper", percentage: 0.25 },
+                        garlic: { name: "Fresh Garlic, minced", percentage: 0.5 },
+                        coriander: { name: "Coriander Seed, ground", percentage: 0.25 },
+                        mustardSeed: { name: "Mustard Seed, whole", percentage: 0.3 },
+                        sodiumErythorbate: { name: "Sodium Erythorbate", percentage: 0.05 },
+                        cure1: { name: "Cure #1", percentage: 0.25 },
+                        tspx: { name: "T-SPX Starter Culture", percentage: 0.025 },
+                        distilledWater: { name: "Distilled Water", percentage: 10 }
+                    }
+                }];
+                currentVersion = 0;
+                saveVersions();
+                renderTabs();
+                renderIngredients();
+                updateIngredients();
+            }
+        }
+
+        function saveVersions() {
+            localStorage.setItem('sausageVersions', JSON.stringify(versions));
+        }
+    </script>
+</body>
+</html>
