@@ -105,7 +105,7 @@
             border-bottom: 1px solid #ddd;
         }
         .version-tabs {
-            margin-left: 20px; /* Indent to make it look like subtabs */
+            margin-left: 20px;
             border-bottom: 1px solid #ddd;
         }
         .recipe-tab, .version-tab {
@@ -128,8 +128,8 @@
         }
         .version-tab {
             background-color: #4CAF50;
-            padding: 6px 12px; /* Slightly smaller padding for subtabs */
-            font-size: 13px; /* Slightly smaller font for subtabs */
+            padding: 6px 12px;
+            font-size: 13px;
         }
         .version-tab.active {
             background-color: #45a049;
@@ -154,7 +154,7 @@
             font-size: 14px;
         }
         .delete-tab.subtab {
-            padding: 6px 10px; /* Smaller padding for version tab delete buttons */
+            padding: 6px 10px;
             font-size: 13px;
         }
         .delete-tab:hover {
@@ -176,7 +176,7 @@
             background-color: #e68900;
         }
         .clear-button.subtab {
-            padding: 6px 12px; /* Smaller padding for version tab clear button */
+            padding: 6px 12px;
             font-size: 13px;
         }
         .reset-button {
@@ -194,7 +194,6 @@
         [contenteditable="true"]:hover {
             background-color: #e8e8e8;
         }
-        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -243,6 +242,14 @@
         .modal-button.no:hover {
             background-color: #cc0000;
         }
+        .fat-ratio-box {
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #f2f2f2;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -250,10 +257,8 @@
 
     <div class="tabs-container">
         <div class="recipe-tabs" id="recipeTabs">
-            <!-- Recipe tabs will be dynamically added here -->
         </div>
         <div class="version-tabs" id="versionTabs">
-            <!-- Version tabs will be dynamically added here -->
         </div>
     </div>
 
@@ -265,7 +270,6 @@
     <div id="ingredients">
         <h3>Adjust Ingredient Percentages (%)</h3>
         <div id="ingredientList">
-            <!-- Ingredients will be dynamically added here -->
         </div>
         <button class="add-ingredient" onclick="addIngredient()">Add New Ingredient</button>
     </div>
@@ -300,7 +304,6 @@
             </li>
             <li><strong>Mix Seasonings and Meat:</strong>
                 <ul contenteditable="true" id="mixIngredientsList">
-                    <!-- Dynamically updated based on ingredients -->
                 </ul>
             </li>
             <li><strong>Stuff Sausages:</strong>
@@ -343,10 +346,12 @@
             <li><strong>Safety:</strong> Cure #1 prevents botulism. Hot smoking to 148°F is safe, though 150°F is more conservative.</li>
             <li><strong>Nebraska Climate:</strong> Use a humidifier to maintain 80–85% humidity during cold smoking.</li>
         </ul>
+        <div class="fat-ratio-box">
+            Total Fat Percentage: <span id="totalFatPercentage">27.5%</span>
+        </div>
         <button class="reset-button" onclick="resetInstructions()">Reset Instructions</button>
     </div>
 
-    <!-- Custom Modal for Yes/No Prompt -->
     <div id="meatPromptModal" class="modal">
         <div class="modal-content">
             <p>Is this ingredient a type of meat (e.g., beef, pork)?</p>
@@ -362,10 +367,9 @@
         let currentRecipe = 0;
         let currentVersion = 0;
 
-        // Default ingredients for a new version
         const defaultIngredients = {
-            groundBeefChuck: { name: "Ground Beef Chuck (70/30)", percentage: 75, isMeat: true },
-            groundPorkButt: { name: "Ground Pork Butt (80/20)", percentage: 25, isMeat: true },
+            groundBeefChuck: { name: "Ground Beef Chuck", percentage: 75, isMeat: true, fatRatio: 30 },
+            groundPorkButt: { name: "Ground Pork Butt", percentage: 25, isMeat: true, fatRatio: 20 },
             salt: { name: "Salt", percentage: 2 },
             dextrose: { name: "Dextrose", percentage: 0.7 },
             picklingSpice: { name: "Pickling Spice", percentage: 0.25 },
@@ -379,14 +383,13 @@
             distilledWater: { name: "Distilled Water", percentage: 10 }
         };
 
-        // Default instructions for reset
         const defaultInstructions = {
             prepareIngredientsList: `
                 <li>Chill ground beef chuck and pork butt to 35–40°F (2–4°C) to ensure safety and ease of mixing.</li>
                 <li>Soak muslin casings in lukewarm water for 1–2 hours to soften, ensuring they’re pliable for stuffing and smoke penetration. Rinse well and keep damp until use.</li>
                 <li>Dissolve T-SPX starter culture (adjusted quantity) in 1/4 cup distilled water and let sit for 10 minutes to activate.</li>
             `,
-            mixIngredientsList: "", // Will be dynamically populated
+            mixIngredientsList: "",
             stuffSausagesList: `
                 <li>Load the sausage stuffer with the meat mixture, avoiding air pockets.</li>
                 <li>Stuff into muslin casings, forming 10–12 inch logs or as desired (muslin casings are typically larger, often 2–3 inches in diameter). Tie ends securely with butcher’s twine, ensuring a tight pack to prevent air gaps. Prick any air bubbles with a sterile pin.</li>
@@ -417,7 +420,6 @@
             `
         };
 
-        // Load recipes and initialize the page
         document.addEventListener('DOMContentLoaded', function() {
             try {
                 console.log("DOMContentLoaded triggered");
@@ -432,7 +434,7 @@
                         versions: [{
                             name: "Version 1",
                             batchSize: 5,
-                            ingredients: defaultIngredients
+                            ingredients: JSON.parse(JSON.stringify(defaultIngredients))
                         }]
                     });
                 }
@@ -440,7 +442,6 @@
                 currentVersion = 0;
                 console.log("Current recipe:", currentRecipe, "Current version:", currentVersion);
 
-                // Load saved instructions
                 Object.keys(defaultInstructions).forEach(stepId => {
                     const savedContent = localStorage.getItem(stepId);
                     const element = document.getElementById(stepId);
@@ -487,9 +488,20 @@
             sortedEntries.forEach(([key, ingredient]) => {
                 const div = document.createElement('div');
                 div.className = 'ingredient';
+                let fatRatioInput = '';
+                if (ingredient.isMeat) {
+                    const fatRatio = ingredient.fatRatio || 0;
+                    const leanRatio = 100 - fatRatio;
+                    fatRatioInput = `
+                        <label>Fat Ratio (%):</label>
+                        <input type="number" id="fatRatio_${key}" value="${fatRatio}" min="0" max="100" step="1" style="width: 50px;" onchange="updateFatRatio('${key}', this.value)">
+                        <span> (Lean/Fat: ${leanRatio}/${fatRatio})</span>
+                    `;
+                }
                 div.innerHTML = `
                     <label>${ingredient.name} (%):</label>
                     <input type="number" id="${key}" value="${ingredient.percentage}" step="0.01" onchange="updateIngredients()">
+                    ${fatRatioInput}
                     <button class="delete-ingredient" onclick="deleteIngredient('${key}')">Delete</button>
                 `;
                 ingredientList.appendChild(div);
@@ -501,6 +513,18 @@
             } else {
                 deleteButtons.forEach(btn => btn.disabled = false);
             }
+        }
+
+        function updateFatRatio(key, value) {
+            const fatRatio = parseFloat(value);
+            if (isNaN(fatRatio) || fatRatio < 0 || fatRatio > 100) {
+                alert("Fat ratio must be between 0 and 100.");
+                return;
+            }
+            recipes[currentRecipe].versions[currentVersion].ingredients[key].fatRatio = fatRatio;
+            saveRecipes();
+            renderIngredients();
+            updateIngredients();
         }
 
         function showMeatPrompt() {
@@ -544,7 +568,18 @@
             }
 
             const isMeat = await showMeatPrompt();
-            ingredients[key] = { name: cleanName, percentage: 0, isMeat: isMeat };
+            const newIngredient = { name: cleanName, percentage: 0, isMeat: isMeat };
+            if (isMeat) {
+                const fatRatio = prompt("Enter the fat percentage for this meat (0-100):", "20");
+                const fatRatioNum = parseFloat(fatRatio);
+                if (isNaN(fatRatioNum) || fatRatioNum < 0 || fatRatioNum > 100) {
+                    alert("Invalid fat percentage. Using default of 20%.");
+                    newIngredient.fatRatio = 20;
+                } else {
+                    newIngredient.fatRatio = fatRatioNum;
+                }
+            }
+            ingredients[key] = newIngredient;
             renderIngredients();
             updateIngredients();
         }
@@ -706,7 +741,23 @@
                 if (input) {
                     input.value = version.ingredients[key].percentage;
                 }
+                const fatInput = document.getElementById(`fatRatio_${key}`);
+                if (fatInput) {
+                    fatInput.value = version.ingredients[key].fatRatio || 0;
+                }
             });
+        }
+
+        function calculateTotalFatPercentage(ingredients) {
+            let totalFatPercentage = 0;
+            const meats = Object.values(ingredients).filter(ing => ing.isMeat);
+            meats.forEach(meat => {
+                if (meat.fatRatio) {
+                    const meatPercentage = meat.percentage / 100;
+                    totalFatPercentage += meatPercentage * meat.fatRatio;
+                }
+            });
+            return totalFatPercentage.toFixed(1);
         }
 
         function updateInstructions() {
@@ -770,15 +821,17 @@
                 const ingredients = {};
                 const ingredientList = document.getElementById('ingredientList').children;
                 for (let div of ingredientList) {
-                    const input = div.querySelector('input[type="number"]');
-                    const key = input.id;
-                    const percentage = parseFloat(input.value);
+                    const input = div.querySelector('input[type="number"][id^=fatRatio_]');
+                    const key = input ? input.id.replace('fatRatio_', '') : div.querySelector('input[type="number"]').id;
+                    const percentage = parseFloat(div.querySelector(`#${key}`).value);
                     const existing = recipes[currentRecipe].versions[currentVersion].ingredients[key];
-                    const isMeat = existing.isMeat !== undefined ? existing.isMeat : (existing.name.toLowerCase().includes('beef') || existing.name.toLowerCase().includes('pork'));
+                    const isMeat = existing.isMeat;
+                    const fatRatio = isMeat ? parseFloat(div.querySelector(`#fatRatio_${key}`).value) : undefined;
                     ingredients[key] = {
                         name: existing.name,
                         percentage: percentage,
-                        isMeat: isMeat
+                        isMeat: isMeat,
+                        fatRatio: fatRatio
                     };
                 }
                 console.log("Ingredients collected:", ingredients);
@@ -786,6 +839,9 @@
                 Object.values(ingredients).forEach(ingredient => {
                     if (isNaN(ingredient.percentage) || ingredient.percentage === undefined) {
                         throw new Error(`Invalid percentage for ${ingredient.name}`);
+                    }
+                    if (ingredient.isMeat && (isNaN(ingredient.fatRatio) || ingredient.fatRatio < 0 || ingredient.fatRatio > 100)) {
+                        throw new Error(`Invalid fat ratio for ${ingredient.name}`);
                     }
                 });
 
@@ -828,6 +884,12 @@
                     tbody.appendChild(row);
                     console.log("Added row:", ingredient.name, scaledAmount, oz, grams, percentage);
                 });
+
+                const totalFatPercentage = calculateTotalFatPercentage(ingredients);
+                const totalFatElement = document.getElementById('totalFatPercentage');
+                if (totalFatElement) {
+                    totalFatElement.textContent = `${totalFatPercentage}%`;
+                }
 
                 updateInstructions();
                 saveRecipes();
