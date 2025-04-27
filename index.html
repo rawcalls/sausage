@@ -23,6 +23,9 @@
         }
         .input-section {
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
         label {
             font-weight: bold;
@@ -242,13 +245,11 @@
         .modal-button.no:hover {
             background-color: #cc0000;
         }
-        .overall-ratio-box {
-            text-align: center;
+        .overall-fat-box {
             padding: 8px;
             background-color: #f2f2f2;
             border: 1px solid #ddd;
             border-radius: 5px;
-            margin-bottom: 10px;
             font-weight: bold;
         }
     </style>
@@ -264,8 +265,13 @@
     </div>
 
     <div class="input-section">
-        <label for="batchSize">Batch Size (lbs):</label>
-        <input type="number" id="batchSize" value="5" min="1" step="0.1" onchange="updateIngredients()">
+        <div>
+            <label for="batchSize">Batch Size (lbs):</label>
+            <input type="number" id="batchSize" value="5" min="1" step="0.1" onchange="updateIngredients()">
+        </div>
+        <div class="overall-fat-box">
+            Overall Fat %: <span id="overallFatPercentage">27.5%</span>
+        </div>
     </div>
 
     <div id="ingredients">
@@ -278,10 +284,6 @@
     <div class="button-section" style="text-align: center; margin: 10px 0;">
         <button onclick="updateIngredients()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">Calculate</button>
         <button onclick="exportToExcel()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">Export to Excel</button>
-    </div>
-
-    <div class="overall-ratio-box">
-        Overall Meat Lean/Fat Ratio: <span id="overallLeanFatRatio">73/27</span>
     </div>
 
     <table id="ingredientTable">
@@ -500,9 +502,10 @@
                     `;
                 }
                 div.innerHTML = `
-                    <label>${ingredient.name} (%):</label>
-                    <input type="number" id="${key}" value="${ingredient.percentage}" step="0.01" onchange="updateIngredients()">
+                    <label>${ingredient.name}:</label>
                     ${ratioInput}
+                    <label>(%):</label>
+                    <input type="number" id="${key}" value="${ingredient.percentage}" step="0.01" onchange="updateIngredients()">
                     <button class="delete-ingredient" onclick="deleteIngredient('${key}')">Delete</button>
                 `;
                 ingredientList.appendChild(div);
@@ -761,7 +764,7 @@
             });
         }
 
-        function calculateOverallLeanFatRatio(ingredients) {
+        function calculateOverallFatPercentage(ingredients) {
             let totalFatPercentage = 0;
             const meats = Object.values(ingredients).filter(ing => ing.isMeat);
             meats.forEach(meat => {
@@ -770,11 +773,7 @@
                     totalFatPercentage += meatPercentage * meat.fatRatio;
                 }
             });
-            const totalLeanPercentage = 100 - totalFatPercentage;
-            return {
-                lean: Math.round(totalLeanPercentage),
-                fat: Math.round(totalFatPercentage)
-            };
+            return totalFatPercentage.toFixed(1);
         }
 
         function updateInstructions() {
@@ -875,10 +874,10 @@
                 };
                 console.log("Updated recipes:", recipes);
 
-                const ratio = calculateOverallLeanFatRatio(ingredients);
-                const overallRatioElement = document.getElementById('overallLeanFatRatio');
-                if (overallRatioElement) {
-                    overallRatioElement.textContent = `${ratio.lean}/${ratio.fat}`;
+                const fatPercentage = calculateOverallFatPercentage(ingredients);
+                const overallFatElement = document.getElementById('overallFatPercentage');
+                if (overallFatElement) {
+                    overallFatElement.textContent = `${fatPercentage}%`;
                 }
 
                 const tbody = document.getElementById('ingredientBody');
