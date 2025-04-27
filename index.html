@@ -93,17 +93,20 @@
             border-radius: 5px;
             box-shadow: 0 0 5px rgba(0,0,0,0.1);
         }
+        .tabs-container {
+            margin: 20px 0;
+        }
         .recipe-tabs, .version-tabs {
             display: flex;
             flex-wrap: wrap;
-            margin: 20px 0;
-            padding: 10px 0;
+            padding: 5px 0;
         }
         .recipe-tabs {
             border-bottom: 1px solid #ddd;
         }
         .version-tabs {
-            border-top: 1px solid #ddd;
+            margin-left: 20px; /* Indent to make it look like subtabs */
+            border-bottom: 1px solid #ddd;
         }
         .recipe-tab, .version-tab {
             padding: 8px 16px;
@@ -125,6 +128,8 @@
         }
         .version-tab {
             background-color: #4CAF50;
+            padding: 6px 12px; /* Slightly smaller padding for subtabs */
+            font-size: 13px; /* Slightly smaller font for subtabs */
         }
         .version-tab.active {
             background-color: #45a049;
@@ -148,6 +153,10 @@
             cursor: pointer;
             font-size: 14px;
         }
+        .delete-tab.subtab {
+            padding: 6px 10px; /* Smaller padding for version tab delete buttons */
+            font-size: 13px;
+        }
         .delete-tab:hover {
             background-color: #cc0000;
         }
@@ -165,6 +174,10 @@
         }
         .clear-button:hover {
             background-color: #e68900;
+        }
+        .clear-button.subtab {
+            padding: 6px 12px; /* Smaller padding for version tab clear button */
+            font-size: 13px;
         }
         .reset-button {
             background-color: #ff9800;
@@ -235,8 +248,13 @@
 <body>
     <h1>Grandpa's Summer Sausage Calculator</h1>
 
-    <div class="recipe-tabs" id="recipeTabs">
-        <!-- Recipe tabs will be dynamically added here -->
+    <div class="tabs-container">
+        <div class="recipe-tabs" id="recipeTabs">
+            <!-- Recipe tabs will be dynamically added here -->
+        </div>
+        <div class="version-tabs" id="versionTabs">
+            <!-- Version tabs will be dynamically added here -->
+        </div>
     </div>
 
     <div class="input-section">
@@ -326,10 +344,6 @@
             <li><strong>Nebraska Climate:</strong> Use a humidifier to maintain 80–85% humidity during cold smoking.</li>
         </ul>
         <button class="reset-button" onclick="resetInstructions()">Reset Instructions</button>
-    </div>
-
-    <div class="version-tabs" id="versionTabs">
-        <!-- Version tabs will be dynamically added here -->
     </div>
 
     <!-- Custom Modal for Yes/No Prompt -->
@@ -627,7 +641,7 @@
                 tabsContainer.appendChild(tab);
 
                 const deleteButton = document.createElement('button');
-                deleteButton.className = 'delete-tab';
+                deleteButton.className = 'delete-tab subtab';
                 deleteButton.textContent = 'Delete';
                 deleteButton.onclick = () => deleteVersion(index);
                 tabsContainer.appendChild(deleteButton);
@@ -640,7 +654,7 @@
             tabsContainer.appendChild(addTab);
 
             const clearButton = document.createElement('button');
-            clearButton.className = 'clear-button';
+            clearButton.className = 'clear-button subtab';
             clearButton.textContent = 'Clear All Versions';
             clearButton.onclick = clearVersions;
             tabsContainer.appendChild(clearButton);
