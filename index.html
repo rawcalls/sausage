@@ -242,12 +242,13 @@
         .modal-button.no:hover {
             background-color: #cc0000;
         }
-        .fat-ratio-box {
-            margin-top: 10px;
+        .overall-ratio-box {
+            text-align: center;
             padding: 8px;
             background-color: #f2f2f2;
             border: 1px solid #ddd;
             border-radius: 5px;
+            margin-bottom: 10px;
             font-weight: bold;
         }
     </style>
@@ -277,6 +278,10 @@
     <div class="button-section" style="text-align: center; margin: 10px 0;">
         <button onclick="updateIngredients()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">Calculate</button>
         <button onclick="exportToExcel()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">Export to Excel</button>
+    </div>
+
+    <div class="overall-ratio-box">
+        Overall Meat Lean/Fat Ratio: <span id="overallLeanFatRatio">73/27</span>
     </div>
 
     <table id="ingredientTable">
@@ -346,9 +351,6 @@
             <li><strong>Safety:</strong> Cure #1 prevents botulism. Hot smoking to 148°F is safe, though 150°F is more conservative.</li>
             <li><strong>Nebraska Climate:</strong> Use a humidifier to maintain 80–85% humidity during cold smoking.</li>
         </ul>
-        <div class="fat-ratio-box">
-            Total Fat Percentage: <span id="totalFatPercentage">27.5%</span>
-        </div>
         <button class="reset-button" onclick="resetInstructions()">Reset Instructions</button>
     </div>
 
@@ -368,8 +370,8 @@
         let currentVersion = 0;
 
         const defaultIngredients = {
-            groundBeefChuck: { name: "Ground Beef Chuck", percentage: 75, isMeat: true, fatRatio: 30 },
-            groundPorkButt: { name: "Ground Pork Butt", percentage: 25, isMeat: true, fatRatio: 20 },
+            groundBeefChuck: { name: "Ground Beef Chuck", percentage: 75, isMeat: true, leanRatio: 70, fatRatio: 30 },
+            groundPorkButt: { name: "Ground Pork Butt", percentage: 25, isMeat: true, leanRatio: 80, fatRatio: 20 },
             salt: { name: "Salt", percentage: 2 },
             dextrose: { name: "Dextrose", percentage: 0.7 },
             picklingSpice: { name: "Pickling Spice", percentage: 0.25 },
@@ -488,20 +490,19 @@
             sortedEntries.forEach(([key, ingredient]) => {
                 const div = document.createElement('div');
                 div.className = 'ingredient';
-                let fatRatioInput = '';
+                let ratioInput = '';
                 if (ingredient.isMeat) {
-                    const fatRatio = ingredient.fatRatio || 0;
-                    const leanRatio = 100 - fatRatio;
-                    fatRatioInput = `
-                        <label>Fat Ratio (%):</label>
-                        <input type="number" id="fatRatio_${key}" value="${fatRatio}" min="0" max="100" step="1" style="width: 50px;" onchange="updateFatRatio('${key}', this.value)">
-                        <span> (Lean/Fat: ${leanRatio}/${fatRatio})</span>
+                    const leanRatio = ingredient.leanRatio || 80;
+                    const fatRatio = ingredient.fatRatio || 20;
+                    ratioInput = `
+                        <label>Lean/Fat Ratio:</label>
+                        <input type="text" id="ratio_${key}" value="${leanRatio}/${fatRatio}" style="width: 60px;" onchange="updateLeanFatRatio('${key}', this.value)">
                     `;
                 }
                 div.innerHTML = `
                     <label>${ingredient.name} (%):</label>
                     <input type="number" id="${key}" value="${ingredient.percentage}" step="0.01" onchange="updateIngredients()">
-                    ${fatRatioInput}
+                    ${ratioInput}
                     <button class="delete-ingredient" onclick="deleteIngredient('${key}')">Delete</button>
                 `;
                 ingredientList.appendChild(div);
@@ -515,15 +516,23 @@
             }
         }
 
-        function updateFatRatio(key, value) {
-            const fatRatio = parseFloat(value);
-            if (isNaN(fatRatio) || fatRatio < 0 || fatRatio > 100) {
-                alert("Fat ratio must be between 0 and 100.");
+        function updateLeanFatRatio(key, value) {
+            const match = value.match(/^(\d+)\/(\d+)$/);
+            if (!match) {
+                alert("Please enter the lean/fat ratio in the format 'lean/fat' (e.g., '70/30').");
+                renderIngredients();
                 return;
             }
+            const leanRatio = parseFloat(match[1]);
+            const fatRatio = parseFloat(match[2]);
+            if (isNaN(leanRatio) || isNaN(fatRatio) || leanRatio + fatRatio !== 100) {
+                alert("Lean and fat ratios must be numbers and add up to 100 (e.g., '70/30').");
+                renderIngredients();
+                return;
+            }
+            recipes[currentRecipe].versions[currentVersion].ingredients[key].leanRatio = leanRatio;
             recipes[currentRecipe].versions[currentVersion].ingredients[key].fatRatio = fatRatio;
             saveRecipes();
-            renderIngredients();
             updateIngredients();
         }
 
@@ -570,13 +579,15 @@
             const isMeat = await showMeatPrompt();
             const newIngredient = { name: cleanName, percentage: 0, isMeat: isMeat };
             if (isMeat) {
-                const fatRatio = prompt("Enter the fat percentage for this meat (0-100):", "20");
-                const fatRatioNum = parseFloat(fatRatio);
-                if (isNaN(fatRatioNum) || fatRatioNum < 0 || fatRatioNum > 100) {
-                    alert("Invalid fat percentage. Using default of 20%.");
+                const ratio = prompt("Enter the lean/fat ratio for this meat (e.g., '80/20'):", "80/20");
+                const match = ratio.match(/^(\d+)\/(\d+)$/);
+                if (!match || parseFloat(match[1]) + parseFloat(match[2]) !== 100) {
+                    alert("Invalid lean/fat ratio. Using default of 80/20.");
+                    newIngredient.leanRatio = 80;
                     newIngredient.fatRatio = 20;
                 } else {
-                    newIngredient.fatRatio = fatRatioNum;
+                    newIngredient.leanRatio = parseFloat(match[1]);
+                    newIngredient.fatRatio = parseFloat(match[2]);
                 }
             }
             ingredients[key] = newIngredient;
@@ -741,14 +752,16 @@
                 if (input) {
                     input.value = version.ingredients[key].percentage;
                 }
-                const fatInput = document.getElementById(`fatRatio_${key}`);
-                if (fatInput) {
-                    fatInput.value = version.ingredients[key].fatRatio || 0;
+                const ratioInput = document.getElementById(`ratio_${key}`);
+                if (ratioInput) {
+                    const leanRatio = version.ingredients[key].leanRatio || 80;
+                    const fatRatio = version.ingredients[key].fatRatio || 20;
+                    ratioInput.value = `${leanRatio}/${fatRatio}`;
                 }
             });
         }
 
-        function calculateTotalFatPercentage(ingredients) {
+        function calculateOverallLeanFatRatio(ingredients) {
             let totalFatPercentage = 0;
             const meats = Object.values(ingredients).filter(ing => ing.isMeat);
             meats.forEach(meat => {
@@ -757,7 +770,11 @@
                     totalFatPercentage += meatPercentage * meat.fatRatio;
                 }
             });
-            return totalFatPercentage.toFixed(1);
+            const totalLeanPercentage = 100 - totalFatPercentage;
+            return {
+                lean: Math.round(totalLeanPercentage),
+                fat: Math.round(totalFatPercentage)
+            };
         }
 
         function updateInstructions() {
@@ -821,17 +838,16 @@
                 const ingredients = {};
                 const ingredientList = document.getElementById('ingredientList').children;
                 for (let div of ingredientList) {
-                    const input = div.querySelector('input[type="number"][id^=fatRatio_]');
-                    const key = input ? input.id.replace('fatRatio_', '') : div.querySelector('input[type="number"]').id;
-                    const percentage = parseFloat(div.querySelector(`#${key}`).value);
+                    const input = div.querySelector('input[type="number"]');
+                    const key = input.id;
+                    const percentage = parseFloat(input.value);
                     const existing = recipes[currentRecipe].versions[currentVersion].ingredients[key];
-                    const isMeat = existing.isMeat;
-                    const fatRatio = isMeat ? parseFloat(div.querySelector(`#fatRatio_${key}`).value) : undefined;
                     ingredients[key] = {
                         name: existing.name,
                         percentage: percentage,
-                        isMeat: isMeat,
-                        fatRatio: fatRatio
+                        isMeat: existing.isMeat,
+                        leanRatio: existing.leanRatio,
+                        fatRatio: existing.fatRatio
                     };
                 }
                 console.log("Ingredients collected:", ingredients);
@@ -839,9 +855,6 @@
                 Object.values(ingredients).forEach(ingredient => {
                     if (isNaN(ingredient.percentage) || ingredient.percentage === undefined) {
                         throw new Error(`Invalid percentage for ${ingredient.name}`);
-                    }
-                    if (ingredient.isMeat && (isNaN(ingredient.fatRatio) || ingredient.fatRatio < 0 || ingredient.fatRatio > 100)) {
-                        throw new Error(`Invalid fat ratio for ${ingredient.name}`);
                     }
                 });
 
@@ -861,6 +874,12 @@
                     ingredients: ingredients
                 };
                 console.log("Updated recipes:", recipes);
+
+                const ratio = calculateOverallLeanFatRatio(ingredients);
+                const overallRatioElement = document.getElementById('overallLeanFatRatio');
+                if (overallRatioElement) {
+                    overallRatioElement.textContent = `${ratio.lean}/${ratio.fat}`;
+                }
 
                 const tbody = document.getElementById('ingredientBody');
                 if (!tbody) throw new Error("Ingredient table body not found");
@@ -884,12 +903,6 @@
                     tbody.appendChild(row);
                     console.log("Added row:", ingredient.name, scaledAmount, oz, grams, percentage);
                 });
-
-                const totalFatPercentage = calculateTotalFatPercentage(ingredients);
-                const totalFatElement = document.getElementById('totalFatPercentage');
-                if (totalFatElement) {
-                    totalFatElement.textContent = `${totalFatPercentage}%`;
-                }
 
                 updateInstructions();
                 saveRecipes();
