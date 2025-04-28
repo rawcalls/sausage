@@ -115,18 +115,32 @@
         .tabs-container {
             margin: 20px 0;
         }
+        .tabs-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
         .recipe-tabs, .version-tabs, .category-section {
             display: flex;
-            flex-wrap: wrap;
             padding: 5px 0;
             align-items: center;
         }
         .recipe-tabs {
-            border-bottom: 1px solid #ddd;
+            flex-direction: column;
+            align-items: flex-start;
+            border-bottom: 3px solid #666;
+            margin-bottom: 15px;
+        }
+        .recipe-tab-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
         }
         .version-tabs {
+            flex-wrap: wrap;
             margin-left: 20px;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 3px solid #666;
         }
         .recipe-tab, .version-tab {
             padding: 8px 16px;
@@ -183,11 +197,11 @@
             background-color: #cc0000;
         }
         .category-button.edit, .assign-button {
-            background-color: #2196F3;
+            background-color: #9c27b0; /* Purple color for Assign to Categories */
             color: white;
         }
         .category-button.edit:hover, .assign-button:hover {
-            background-color: #1976D2;
+            background-color: #7b1fa2;
         }
         .category-button.delete {
             background-color: #ff4444;
@@ -342,8 +356,10 @@
     </div>
 
     <div class="tabs-container">
+        <div class="tabs-header">Recipes</div>
         <div class="recipe-tabs" id="recipeTabs">
         </div>
+        <div class="tabs-header">Versions</div>
         <div class="version-tabs" id="versionTabs">
         </div>
     </div>
@@ -983,6 +999,9 @@
 
             filteredRecipes.forEach((recipe, index) => {
                 const globalIndex = recipes.findIndex(r => r.name === recipe.name);
+                const tabGroup = document.createElement('div');
+                tabGroup.className = 'recipe-tab-group';
+
                 const tab = document.createElement('button');
                 tab.className = 'recipe-tab' + (globalIndex === currentRecipe ? ' active' : '');
                 tab.textContent = recipe.name;
@@ -1005,32 +1024,39 @@
                 tab.addEventListener('touchend', () => clearTimeout(pressTimer));
                 tab.addEventListener('touchcancel', () => clearTimeout(pressTimer));
 
-                tabsContainer.appendChild(tab);
+                tabGroup.appendChild(tab);
 
                 const assignButton = document.createElement('button');
                 assignButton.className = 'assign-button';
                 assignButton.textContent = 'Assign to Categories';
                 assignButton.onclick = () => showCategoryAssignModal(globalIndex);
-                tabsContainer.appendChild(assignButton);
+                tabGroup.appendChild(assignButton);
 
                 const deleteButton = document.createElement('button');
                 deleteButton.className = 'delete-tab';
                 deleteButton.textContent = 'Delete';
                 deleteButton.onclick = () => deleteRecipe(globalIndex);
-                tabsContainer.appendChild(deleteButton);
+                tabGroup.appendChild(deleteButton);
+
+                tabsContainer.appendChild(tabGroup);
             });
+
+            const tabGroup = document.createElement('div');
+            tabGroup.className = 'recipe-tab-group';
 
             const addTab = document.createElement('button');
             addTab.className = 'recipe-tab add';
             addTab.textContent = '+';
             addTab.onclick = addRecipe;
-            tabsContainer.appendChild(addTab);
+            tabGroup.appendChild(addTab);
 
             const clearButton = document.createElement('button');
             clearButton.className = 'clear-button';
             clearButton.textContent = 'Clear All Recipes';
             clearButton.onclick = clearRecipes;
-            tabsContainer.appendChild(clearButton);
+            tabGroup.appendChild(clearButton);
+
+            tabsContainer.appendChild(tabGroup);
         }
 
         function renderVersionTabs() {
