@@ -197,7 +197,7 @@
             background-color: #cc0000;
         }
         .category-button.edit, .assign-button {
-            background-color: #9c27b0; /* Purple color for Assign to Categories */
+            background-color: #9c27b0;
             color: white;
         }
         .category-button.edit:hover, .assign-button:hover {
@@ -210,7 +210,7 @@
         .category-button.delete:hover {
             background-color: #cc0000;
         }
-        .clear-button, .reset-button, .export-button, .import-button {
+        .clear-button, .reset-button, .export-button, .import-button, .print-button {
             padding: 8px 16px;
             color: white;
             border: none;
@@ -246,6 +246,12 @@
         }
         .import-button:hover {
             background-color: #1976D2;
+        }
+        .print-button {
+            background-color: #ff5722;
+        }
+        .print-button:hover {
+            background-color: #e64a19;
         }
         [contenteditable="true"] {
             border: 1px dashed #ccc;
@@ -341,6 +347,50 @@
         .delete-step:hover {
             background-color: #cc0000;
         }
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background: white;
+                box-shadow: none;
+            }
+            .category-section, .tabs-container, .input-section, #ingredients, .button-section, .modal, .edit-step, .delete-step, .reset-button {
+                display: none !important;
+            }
+            h1, h2, h3 {
+                color: black;
+                page-break-after: avoid;
+            }
+            #ingredientTable, .directions {
+                page-break-inside: avoid;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 10px 0;
+            }
+            th, td {
+                border: 1px solid black;
+                padding: 8px;
+                text-align: left;
+            }
+            th {
+                background: #f2f2f2;
+            }
+            .directions {
+                margin-top: 20px;
+                padding: 0;
+                background: none;
+                box-shadow: none;
+            }
+            ul, ol {
+                margin: 10px 0;
+                padding-left: 20px;
+            }
+            li {
+                margin-bottom: 5px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -389,6 +439,7 @@
             Import Recipe
             <input type="file" id="importRecipeInput" accept=".json" onchange="importRecipe()" style="display: none;">
         </label>
+        <button class="print-button" onclick="printRecipe()">Print Recipe</button>
     </div>
 
     <table id="ingredientTable">
@@ -685,7 +736,6 @@
                         return;
                     }
 
-                    // Check for duplicates
                     const allNames = Object.values(ingredients).map(ing => ing.name);
                     const otherNames = allNames.filter((_, idx) => sortedEntries[idx][0] !== oldKey);
                     if (otherNames.includes(newName)) {
@@ -694,13 +744,11 @@
                         return;
                     }
 
-                    // Update the ingredient name and key
                     const newKey = newName.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const updatedIngredient = { ...ingredients[oldKey], name: newName };
                     delete ingredients[oldKey];
                     ingredients[newKey] = updatedIngredient;
 
-                    // Update the DOM elements
                     this.dataset.key = newKey;
                     const percentageInput = div.querySelector(`input[type="number"]`);
                     percentageInput.id = newKey;
@@ -820,7 +868,6 @@
             const select = document.getElementById('categorySelect');
             select.innerHTML = '';
 
-            // Sort categories: "All Recipes" first, then alphabetically
             const sortedCategories = [...categories].sort((a, b) => {
                 if (a.name === "All Recipes") return -1;
                 if (b.name === "All Recipes") return 1;
@@ -837,7 +884,6 @@
                 select.appendChild(option);
             });
 
-            // Update "All Recipes" category
             const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
             if (allRecipesCategory) {
                 allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
@@ -910,7 +956,6 @@
             const category = categories.find(cat => cat.name === currentCategory);
             const recipeNames = category ? category.recipeRefs : [];
             
-            // Find the first recipe in the category
             let newRecipeIndex = recipes.findIndex(recipe => recipeNames.includes(recipe.name));
             if (newRecipeIndex === -1) {
                 newRecipeIndex = 0;
@@ -973,7 +1018,6 @@
                 }
             });
 
-            // Update "All Recipes" category
             const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
             if (allRecipesCategory) {
                 allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
@@ -992,7 +1036,6 @@
             const category = categories.find(cat => cat.name === currentCategory);
             const recipeNames = category ? category.recipeRefs : [];
 
-            // Filter and sort recipes based on the current category
             const filteredRecipes = recipes
                 .filter(recipe => recipeNames.includes(recipe.name))
                 .sort((a, b) => a.name.localeCompare(b.name));
@@ -1119,7 +1162,6 @@
                     return;
                 }
                 recipes[index].name = trimmedName;
-                // Update categories
                 categories.forEach(cat => {
                     const refIndex = cat.recipeRefs.indexOf(oldName);
                     if (refIndex !== -1) {
@@ -1418,7 +1460,6 @@
                 try {
                     const importedRecipe = JSON.parse(e.target.result);
                     
-                    // Validate the imported recipe structure
                     if (!importedRecipe.name || !Array.isArray(importedRecipe.versions) || importedRecipe.versions.length === 0) {
                         throw new Error("Invalid recipe format: Missing name or versions.");
                     }
@@ -1429,7 +1470,6 @@
                         }
                     });
 
-                    // Check for duplicate recipe names and append a suffix if necessary
                     let newRecipeName = importedRecipe.name;
                     let suffix = 1;
                     while (recipes.some(recipe => recipe.name === newRecipeName)) {
@@ -1438,11 +1478,9 @@
                     }
                     importedRecipe.name = newRecipeName;
 
-                    // Add the imported recipe to the list
                     recipes.push(importedRecipe);
                     recipes.sort((a, b) => a.name.localeCompare(b.name));
 
-                    // Update categories
                     const category = categories.find(cat => cat.name === currentCategory);
                     if (category && category.name !== "All Recipes") {
                         category.recipeRefs.push(newRecipeName);
@@ -1477,8 +1515,87 @@
             };
             reader.readAsText(file);
 
-            // Reset the input field
             input.value = '';
+        }
+
+        function printRecipe() {
+            const recipeName = recipes[currentRecipe].name;
+            const versionName = recipes[currentRecipe].versions[currentVersion].name;
+            const batchSize = parseFloat(document.getElementById('batchSize').value);
+            const fatPercentage = document.getElementById('overallFatPercentage').textContent;
+            const ingredientTable = document.getElementById('ingredientTable').outerHTML;
+            const instructionsList = document.getElementById('instructionsList').outerHTML;
+            const notesList = document.getElementById('notesList').outerHTML;
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Print Recipe: ${recipeName} - ${versionName}</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 20px;
+                            color: #333;
+                        }
+                        h1, h2, h3 {
+                            color: black;
+                            page-break-after: avoid;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 10px 0;
+                            page-break-inside: avoid;
+                        }
+                        th, td {
+                            border: 1px solid black;
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        th {
+                            background: #f2f2f2;
+                        }
+                        .directions {
+                            margin-top: 20px;
+                            page-break-inside: avoid;
+                        }
+                        ul, ol {
+                            margin: 10px 0;
+                            padding-left: 20px;
+                        }
+                        li {
+                            margin-bottom: 5px;
+                        }
+                        .info-section {
+                            margin-bottom: 20px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>${recipeName} - ${versionName}</h1>
+                    <div class="info-section">
+                        <p><strong>Batch Size:</strong> ${batchSize} lbs</p>
+                        <p><strong>Overall Fat %:</strong> ${fatPercentage}</p>
+                    </div>
+                    <h2>Ingredients</h2>
+                    ${ingredientTable}
+                    <div class="directions">
+                        <h2>Instructions</h2>
+                        ${instructionsList}
+                        <h3>Notes</h3>
+                        ${notesList}
+                    </div>
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                            setTimeout(() => window.close(), 100);
+                        };
+                    </script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         }
 
         function addRecipe() {
@@ -1497,6 +1614,10 @@
             const newRecipeName = recipes[recipes.length - 1].name;
             const category = categories.find(cat => cat.name === currentCategory);
             if (category && category.name !== "All Recipes") {
+                category.recipeRefs.push(newRecipeName);
+                category.recipeRefs.sort();
+            }
+            const allRecipesCategory = categories.find(cat =>         if (category && category.name !== "All Recipes") {
                 category.recipeRefs.push(newRecipeName);
                 category.recipeRefs.sort();
             }
@@ -1547,7 +1668,6 @@
             recipes.splice(index, 1);
             recipes.sort((a, b) => a.name.localeCompare(b.name));
 
-            // Update categories
             categories.forEach(cat => {
                 cat.recipeRefs = cat.recipeRefs.filter(name => name !== recipeName);
             });
