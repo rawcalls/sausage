@@ -347,6 +347,53 @@
         .delete-step:hover {
             background-color: #cc0000;
         }
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: white;
+                box-shadow: none;
+            }
+            h1, #ingredientTable, .directions {
+                display: block;
+            }
+            .category-section, .tabs-container, .input-section, #ingredients, .button-section, .modal {
+                display: none;
+            }
+            .directions .reset-button, .edit-step, .delete-step {
+                display: none;
+            }
+            #ingredientTable, .directions {
+                width: 100%;
+                margin: 10px 0;
+                page-break-inside: avoid;
+            }
+            h1 {
+                font-size: 24px;
+                margin-bottom: 20px;
+                text-align: center;
+            }
+            table {
+                font-size: 12px;
+            }
+            th, td {
+                padding: 6px;
+            }
+            .directions {
+                font-size: 12px;
+                padding: 10px;
+                box-shadow: none;
+                background-color: transparent;
+            }
+            .directions h2, .directions h3 {
+                font-size: 16px;
+                margin: 10px 0;
+            }
+            .directions ol, .directions ul {
+                margin: 10px 0;
+                padding-left: 20px;
+            }
+        }
     </style>
 </head>
 <body>
