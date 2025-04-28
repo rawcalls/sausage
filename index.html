@@ -7,6 +7,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -547,6 +549,20 @@
     </div>
 
     <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBFQFP8-f6q0u25uS8kig9NDXODycM_iC8",
+            authDomain: "sausage-calculator-6b790.firebaseapp.com",
+            databaseURL: "https://sausage-calculator-6b790-default-rtdb.firebaseio.com/",
+            projectId: "sausage-calculator-6b790",
+            storageBucket: "sausage-calculator-6b790.firebasestorage.app",
+            messagingSenderId: "887840437477",
+            appId: "1:887840437477:web:c167f81587e602f1dd900c",
+            measurementId: "G-X619MWGM1P"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         let recipes = [];
         let categories = [];
         let currentCategory = "All Recipes";
@@ -629,17 +645,19 @@
             distilledWater: { name: "Distilled Water", percentage: 10 }
         };
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             try {
                 console.log("DOMContentLoaded triggered");
-                const savedRecipes = localStorage.getItem('sausageRecipes');
-                const savedCategories = localStorage.getItem('sausageCategories');
-                if (savedRecipes) {
-                    console.log("Loading saved recipes from localStorage");
-                    recipes = JSON.parse(savedRecipes);
+                // Load recipes and categories from Firebase
+                const recipesSnapshot = await database.ref('sausageRecipes').once('value');
+                const categoriesSnapshot = await database.ref('sausageCategories').once('value');
+
+                if (recipesSnapshot.exists()) {
+                    console.log("Loading recipes from Firebase");
+                    recipes = recipesSnapshot.val();
                 } else {
-                    console.log("No saved recipes, initializing default recipe");
-                    recipes.push({
+                    console.log("No recipes in Firebase, initializing default recipe");
+                    recipes = [{
                         name: "Summer Sausage",
                         versions: [{
                             name: "Version 1",
@@ -648,18 +666,22 @@
                             instructions: JSON.parse(JSON.stringify(defaultInstructions)),
                             notes: defaultNotes
                         }]
-                    });
+                    }];
+                    await database.ref('sausageRecipes').set(recipes);
                 }
-                if (savedCategories) {
-                    console.log("Loading saved categories from localStorage");
-                    categories = JSON.parse(savedCategories);
+
+                if (categoriesSnapshot.exists()) {
+                    console.log("Loading categories from Firebase");
+                    categories = categoriesSnapshot.val();
                 } else {
-                    console.log("No saved categories, initializing default categories");
+                    console.log("No categories in Firebase, initializing default categories");
                     categories = [
                         { name: "All Recipes", recipeRefs: ["Summer Sausage"], isFixed: true },
                         { name: "Sausage", recipeRefs: ["Summer Sausage"] }
                     ];
+                    await database.ref('sausageCategories').set(categories);
                 }
+
                 currentCategory = "All Recipes";
                 currentRecipe = 0;
                 currentVersion = 0;
@@ -675,6 +697,7 @@
                 updatePageTitle();
             } catch (error) {
                 console.error("Error in DOMContentLoaded:", error.message, error.stack);
+                alert("Failed to initialize the app. Please check your Firebase configuration and database rules.");
             }
         });
 
@@ -855,7 +878,6 @@
                         return;
                     }
 
-                    // Check for duplicates
                     const allNames = Object.values(ingredients).map(ing => ing.name);
                     const otherNames = allNames.filter((_, idx) => sortedEntries[idx][0] !== oldKey);
                     if (otherNames.includes(newName)) {
@@ -864,13 +886,11 @@
                         return;
                     }
 
-                    // Update the ingredient name and key
                     const newKey = newName.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const updatedIngredient = { ...ingredients[oldKey], name: newName };
                     delete ingredients[oldKey];
                     ingredients[newKey] = updatedIngredient;
 
-                    // Update the DOM elements
                     this.dataset.key = newKey;
                     const percentageInput = div.querySelector(`input[type="number"]`);
                     percentageInput.id = newKey;
@@ -990,7 +1010,6 @@
             const select = document.getElementById('categorySelect');
             select.innerHTML = '';
 
-            // Sort categories: "All Recipes" first, then alphabetically
             const sortedCategories = [...categories].sort((a, b) => {
                 if (a.name === "All Recipes") return -1;
                 if (b.name === "All Recipes") return 1;
@@ -1007,7 +1026,6 @@
                 select.appendChild(option);
             });
 
-            // Update "All Recipes" category
             const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
             if (allRecipesCategory) {
                 allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
@@ -1080,7 +1098,6 @@
             const category = categories.find(cat => cat.name === currentCategory);
             const recipeNames = category ? category.recipeRefs : [];
             
-            // Find the first recipe in the category
             let newRecipeIndex = recipes.findIndex(recipe => recipeNames.includes(recipe.name));
             if (newRecipeIndex === -1) {
                 newRecipeIndex = 0;
@@ -1098,562 +1115,116 @@
             updatePageTitle();
         }
 
-        function showCategoryAssignModal(recipeIndex) {
-            currentRecipeForAssignment = recipeIndex;
-            const modal = document.getElementById('categoryAssignModal');
-            const checkboxesContainer = document.getElementById('categoryCheckboxes');
-            checkboxesContainer.innerHTML = '';
-
-            const recipeName = recipes[recipeIndex].name;
-            const nonFixedCategories = categories.filter(cat => !cat.isFixed);
-
-            nonFixedCategories.forEach(category => {
-                const div = document.createElement('div');
-                div.className = 'category-checkbox';
-                const isChecked = category.recipeRefs.includes(recipeName);
-                div.innerHTML = `
-                    <input type="checkbox" id="cat_${category.name}" ${isChecked ? 'checked' : ''}>
-                    <label for="cat_${category.name}">${category.name}</label>
-                `;
-                checkboxesContainer.appendChild(div);
-            });
-
-            modal.style.display = 'flex';
-        }
-
-        function closeCategoryAssignModal() {
-            const modal = document.getElementById('categoryAssignModal');
-            modal.style.display = 'none';
-            currentRecipeForAssignment = null;
-        }
-
-        function saveCategoryAssignments() {
-            const recipeName = recipes[currentRecipeForAssignment].name;
-            const nonFixedCategories = categories.filter(cat => !cat.isFixed);
-
-            nonFixedCategories.forEach(category => {
-                const checkbox = document.getElementById(`cat_${category.name}`);
-                if (checkbox.checked) {
-                    if (!category.recipeRefs.includes(recipeName)) {
-                        category.recipeRefs.push(recipeName);
-                        category.recipeRefs.sort();
-                    }
-                } else {
-                    category.recipeRefs = category.recipeRefs.filter(name => name !== recipeName);
-                }
-            });
-
-            // Update "All Recipes" category
-            const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
-            if (allRecipesCategory) {
-                allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
-            }
-
-            saveCategories();
-            closeCategoryAssignModal();
-            renderCategorySelect();
-            renderRecipeTabs();
-        }
-
         function renderRecipeTabs() {
-            const tabsContainer = document.getElementById('recipeTabs');
-            tabsContainer.innerHTML = '';
+            const recipeTabs = document.getElementById('recipeTabs');
+            recipeTabs.innerHTML = '';
 
             const category = categories.find(cat => cat.name === currentCategory);
             const recipeNames = category ? category.recipeRefs : [];
 
-            // Filter and sort recipes based on the current category
-            const filteredRecipes = recipes
-                .filter(recipe => recipeNames.includes(recipe.name))
-                .sort((a, b) => a.name.localeCompare(b.name));
-
-            filteredRecipes.forEach((recipe, index) => {
-                const globalIndex = recipes.findIndex(r => r.name === recipe.name);
-                const tabGroup = document.createElement('div');
-                tabGroup.className = 'recipe-tab-group';
-
-                const tab = document.createElement('button');
-                tab.className = 'recipe-tab' + (globalIndex === currentRecipe ? ' active' : '');
-                tab.textContent = recipe.name;
-                
-                tab.onclick = (e) => {
-                    if (e.shiftKey) {
-                        renameRecipe(globalIndex);
-                    } else {
-                        switchRecipe(globalIndex);
-                    }
-                };
-
-                let pressTimer;
-                tab.addEventListener('touchstart', (e) => {
-                    pressTimer = setTimeout(() => {
-                        e.preventDefault();
-                        renameRecipe(globalIndex);
-                    }, 1000);
-                });
-                tab.addEventListener('touchend', () => clearTimeout(pressTimer));
-                tab.addEventListener('touchcancel', () => clearTimeout(pressTimer));
-
-                tabGroup.appendChild(tab);
-
-                const assignButton = document.createElement('button');
-                assignButton.className = 'assign-button';
-                assignButton.textContent = 'Assign to Categories';
-                assignButton.onclick = () => showCategoryAssignModal(globalIndex);
-                tabGroup.appendChild(assignButton);
-
-                const deleteButton = document.createElement('button');
-                deleteButton.className = 'delete-tab';
-                deleteButton.textContent = 'Delete';
-                deleteButton.onclick = () => deleteRecipe(globalIndex);
-                tabGroup.appendChild(deleteButton);
-
-                tabsContainer.appendChild(tabGroup);
-            });
-
             const tabGroup = document.createElement('div');
             tabGroup.className = 'recipe-tab-group';
 
-            const addTab = document.createElement('button');
-            addTab.className = 'recipe-tab add';
-            addTab.textContent = '+';
-            addTab.onclick = addRecipe;
-            tabGroup.appendChild(addTab);
+            recipes.forEach((recipe, index) => {
+                if (recipeNames.includes(recipe.name) || currentCategory === "All Recipes") {
+                    const button = document.createElement('button');
+                    button.className = `recipe-tab ${index === currentRecipe ? 'active' : ''}`;
+                    button.textContent = recipe.name;
+                    button.onclick = () => {
+                        currentRecipe = index;
+                        currentVersion = 0;
+                        renderRecipeTabs();
+                        renderVersionTabs();
+                        loadVersion(currentVersion);
+                        renderIngredients();
+                        renderInstructions();
+                        updateIngredients();
+                        updatePageTitle();
+                    };
+                    tabGroup.appendChild(button);
 
-            const clearButton = document.createElement('button');
-            clearButton.className = 'clear-button';
-            clearButton.textContent = 'Clear All Recipes';
-            clearButton.onclick = clearRecipes;
-            tabGroup.appendChild(clearButton);
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'delete-tab';
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.onclick = () => deleteRecipe(index);
+                    tabGroup.appendChild(deleteButton);
 
-            tabsContainer.appendChild(tabGroup);
+                    const assignButton = document.createElement('button');
+                    assignButton.className = 'assign-button';
+                    assignButton.textContent = 'Assign';
+                    assignButton.onclick = () => openCategoryAssignModal(index);
+                    tabGroup.appendChild(assignButton);
+                }
+            });
+
+            const addButton = document.createElement('button');
+            addButton.className = 'recipe-tab add';
+            addButton.textContent = '+ Add Recipe';
+            addButton.onclick = addRecipe;
+            tabGroup.appendChild(addButton);
+
+            recipeTabs.appendChild(tabGroup);
         }
 
         function renderVersionTabs() {
-            const tabsContainer = document.getElementById('versionTabs');
-            tabsContainer.innerHTML = '';
+            const versionTabs = document.getElementById('versionTabs');
+            versionTabs.innerHTML = '';
 
             const versions = recipes[currentRecipe].versions;
             versions.forEach((version, index) => {
-                const tab = document.createElement('button');
-                tab.className = 'version-tab' + (index === currentVersion ? ' active' : '');
-                tab.textContent = `${version.name} (${version.batchSize} lbs)`;
-                
-                tab.onclick = (e) => {
-                    if (e.shiftKey) {
-                        renameVersion(index);
-                    } else {
-                        switchVersion(index);
-                    }
-                };
-
-                let pressTimer;
-                tab.addEventListener('touchstart', (e) => {
-                    pressTimer = setTimeout(() => {
-                        e.preventDefault();
-                        renameVersion(index);
-                    }, 1000);
-                });
-                tab.addEventListener('touchend', () => clearTimeout(pressTimer));
-                tab.addEventListener('touchcancel', () => clearTimeout(pressTimer));
-
-                tabsContainer.appendChild(tab);
-
-                const deleteButton = document.createElement('button');
-                deleteButton.className = 'delete-tab subtab';
-                deleteButton.textContent = 'Delete';
-                deleteButton.onclick = () => deleteVersion(index);
-                tabsContainer.appendChild(deleteButton);
-            });
-
-            const addTab = document.createElement('button');
-            addTab.className = 'version-tab add';
-            addTab.textContent = '+';
-            addTab.onclick = addVersion;
-            tabsContainer.appendChild(addTab);
-
-            const clearButton = document.createElement('button');
-            clearButton.className = 'clear-button subtab';
-            clearButton.textContent = 'Clear All Versions';
-            clearButton.onclick = clearVersions;
-            tabsContainer.appendChild(clearButton);
-        }
-
-        function renameRecipe(index) {
-            const oldName = recipes[index].name;
-            const newName = prompt("Enter a new name for this recipe:", oldName);
-            if (newName && newName.trim() !== "") {
-                const trimmedName = newName.trim();
-                if (recipes.some(recipe => recipe.name === trimmedName && recipe.name !== oldName)) {
-                    alert("A recipe with this name already exists.");
-                    return;
-                }
-                recipes[index].name = trimmedName;
-                // Update categories
-                categories.forEach(cat => {
-                    const refIndex = cat.recipeRefs.indexOf(oldName);
-                    if (refIndex !== -1) {
-                        cat.recipeRefs[refIndex] = trimmedName;
-                        cat.recipeRefs.sort();
-                    }
-                });
-                saveRecipes();
-                saveCategories();
-                renderCategorySelect();
-                renderRecipeTabs();
-                updatePageTitle();
-            }
-        }
-
-        function renameVersion(index) {
-            const newName = prompt("Enter a new name for this version:", recipes[currentRecipe].versions[index].name);
-            if (newName && newName.trim() !== "") {
-                recipes[currentRecipe].versions[index].name = newName.trim();
-                saveRecipes();
-                renderVersionTabs();
-                updatePageTitle();
-            }
-        }
-
-        function switchRecipe(index) {
-            currentRecipe = index;
-            currentVersion = 0;
-            saveRecipes();
-            renderRecipeTabs();
-            renderVersionTabs();
-            loadVersion(currentVersion);
-            renderIngredients();
-            renderInstructions();
-            updateIngredients();
-            updatePageTitle();
-        }
-
-        function switchVersion(index) {
-            currentVersion = index;
-            saveRecipes();
-            renderVersionTabs();
-            loadVersion(currentVersion);
-            renderIngredients();
-            renderInstructions();
-            updateIngredients();
-            updatePageTitle();
-        }
-
-        function loadVersion(index) {
-            const version = recipes[currentRecipe].versions[index];
-            document.getElementById('batchSize').value = version.batchSize;
-            Object.keys(version.ingredients).forEach(key => {
-                const input = document.getElementById(key);
-                if (input) {
-                    input.value = version.ingredients[key].percentage;
-                }
-                const ratioInput = document.getElementById(`ratio_${key}`);
-                if (ratioInput) {
-                    const leanRatio = version.ingredients[key].leanRatio || 80;
-                    const fatRatio = version.ingredients[key].fatRatio || 20;
-                    ratioInput.value = `${leanRatio}/${fatRatio}`;
-                }
-            });
-        }
-
-        function calculateOverallFatPercentage(ingredients) {
-            let totalFatPercentage = 0;
-            const meats = Object.values(ingredients).filter(ing => ing.isMeat);
-            meats.forEach(meat => {
-                if (meat.fatRatio) {
-                    const meatPercentage = meat.percentage / 100;
-                    totalFatPercentage += meatPercentage * meat.fatRatio;
-                }
-            });
-            return totalFatPercentage.toFixed(1);
-        }
-
-        function updateInstructions() {
-            const version = recipes[currentRecipe].versions[currentVersion];
-            const mixIndex = version.instructions.findIndex(step => step.title.toLowerCase().includes("mix seasonings and meat"));
-            if (mixIndex === -1) return;
-
-            const mixContent = version.instructions[mixIndex].content;
-            const isEdited = mixContent.trim() !== "" && mixContent !== "<li>Enter details here.</li>";
-
-            if (isEdited) return;
-
-            let newContent = '';
-            const ingredients = version.ingredients;
-            const meats = [];
-            const seasonings = [];
-            Object.values(ingredients).forEach(ingredient => {
-                if (ingredient.isMeat) {
-                    meats.push(ingredient.name);
-                } else if (!ingredient.name.toLowerCase().includes('t-spx') && !ingredient.name.toLowerCase().includes('distilled water')) {
-                    seasonings.push(ingredient.name);
-                }
-            });
-
-            if (meats.length > 0) {
-                newContent += `<li>In a large, chilled bowl, combine ${meats.join(' and ')} (quantities as calculated).</li>`;
-            }
-
-            if (seasonings.length > 0) {
-                newContent += `<li>Add ${seasonings.join(', ')} (quantities as calculated). Mix thoroughly by hand or with a stand mixer for 1–2 minutes until evenly distributed.</li>`;
-            }
-
-            const tspx = Object.values(ingredients).find(ing => ing.name.toLowerCase().includes('t-spx'));
-            if (tspx) {
-                newContent += `<li>Add activated T-SPX slurry and remaining distilled water (adjusted quantity minus the 1/4 cup used for culture). Mix until the meat becomes sticky and cohesive (about 1–2 minutes) to ensure proper binding and culture distribution.</li>`;
-            }
-
-            version.instructions[mixIndex].content = newContent;
-            saveRecipes();
-            renderInstructions();
-        }
-
-        function updateIngredients() {
-            try {
-                console.log("updateIngredients called");
-                const batchSizeElement = document.getElementById('batchSize');
-                if (!batchSizeElement) throw new Error("Batch size element not found");
-                const batchSize = parseFloat(batchSizeElement.value);
-                console.log("Batch size:", batchSize);
-                if (isNaN(batchSize) || batchSize <= 0) {
-                    console.log("Invalid batch size, aborting");
-                    alert("Please enter a valid batch size greater than 0.");
-                    return;
-                }
-
-                const ingredients = {};
-                const ingredientList = document.getElementById('ingredientList').children;
-                for (let div of ingredientList) {
-                    const input = div.querySelector('input[type="number"]');
-                    const key = input.id;
-                    const percentage = parseFloat(input.value);
-                    const existing = recipes[currentRecipe].versions[currentVersion].ingredients[key];
-                    ingredients[key] = {
-                        name: existing.name,
-                        percentage: percentage,
-                        isMeat: existing.isMeat,
-                        leanRatio: existing.leanRatio,
-                        fatRatio: existing.fatRatio
-                    };
-                }
-                console.log("Ingredients collected:", ingredients);
-
-                Object.values(ingredients).forEach(ingredient => {
-                    if (isNaN(ingredient.percentage) || ingredient.percentage === undefined) {
-                        throw new Error(`Invalid percentage for ${ingredient.name}`);
-                    }
-                });
-
-                const meatTotal = Object.values(ingredients)
-                    .filter(ing => ing.isMeat)
-                    .reduce((sum, ing) => sum + ing.percentage, 0);
-                console.log("Meat total:", meatTotal);
-                if (Math.abs(meatTotal - 100) > 0.01) {
-                    console.log("Meat percentages do not add up to 100, aborting");
-                    alert("The percentages of meat ingredients (e.g., beef, pork) should add up to 100%.");
-                    return;
-                }
-
-                recipes[currentRecipe].versions[currentVersion] = {
-                    name: recipes[currentRecipe].versions[currentVersion].name,
-                    batchSize: batchSize,
-                    ingredients: ingredients,
-                    instructions: recipes[currentRecipe].versions[currentVersion].instructions,
-                    notes: recipes[currentRecipe].versions[currentVersion].notes
-                };
-                console.log("Updated recipes:", recipes);
-
-                const fatPercentage = calculateOverallFatPercentage(ingredients);
-                const overallFatElement = document.getElementById('overallFatPercentage');
-                if (overallFatElement) {
-                    overallFatElement.textContent = `${fatPercentage}%`;
-                }
-
-                const tbody = document.getElementById('ingredientBody');
-                if (!tbody) throw new Error("Ingredient table body not found");
-                tbody.innerHTML = '';
-                console.log("Cleared ingredient table");
-
-                Object.values(ingredients).forEach(ingredient => {
-                    const percentage = ingredient.percentage;
-                    const scaledAmount = (percentage / 100) * batchSize;
-                    const oz = scaledAmount * 16;
-                    const grams = scaledAmount * 453.592;
-
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${ingredient.name}</td>
-                        <td>${scaledAmount.toFixed(4)}</td>
-                        <td>${oz.toFixed(1)}</td>
-                        <td>${grams.toFixed(1)}</td>
-                        <td>${percentage.toFixed(2)}%</td>
-                    `;
-                    tbody.appendChild(row);
-                    console.log("Added row:", ingredient.name, scaledAmount, oz, grams, percentage);
-                });
-
-                updateInstructions();
-                saveRecipes();
-                renderVersionTabs();
-            } catch (error) {
-                console.error("Error in updateIngredients:", error.message, error.stack);
-            }
-        }
-
-        function exportToExcel() {
-            const batchSize = parseFloat(document.getElementById('batchSize').value);
-            const data = [
-                ["Ingredient", "Amount (lbs)", "Amount (oz)", "Amount (g)", "Percentage (%)"]
-            ];
-
-            const ingredients = recipes[currentRecipe].versions[currentVersion].ingredients;
-            Object.values(ingredients).forEach(ingredient => {
-                const percentage = ingredient.percentage;
-                const scaledAmount = (percentage / 100) * batchSize;
-                const oz = scaledAmount * 16;
-                const grams = scaledAmount * 453.592;
-
-                data.push([
-                    ingredient.name,
-                    scaledAmount.toFixed(4),
-                    oz.toFixed(1),
-                    grams.toFixed(1),
-                    percentage.toFixed(2)
-                ]);
-            });
-
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(data);
-
-            const colWidths = [
-                { wch: 25 },
-                { wch: 15 },
-                { wch: 15 },
-                { wch: 15 },
-                { wch: 15 }
-            ];
-            ws['!cols'] = colWidths;
-
-            data[0].forEach((_, colIndex) => {
-                const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIndex });
-                if (!ws[cellRef]) ws[cellRef] = { t: 's', v: data[0][colIndex] };
-                ws[cellRef].s = {
-                    font: { bold: true },
-                    alignment: { horizontal: "center" },
-                    border: {
-                        top: { style: "thin" },
-                        bottom: { style: "thin" },
-                        left: { style: "thin" },
-                        right: { style: "thin" }
-                    }
-                };
-            });
-
-            for (let row = 1; row < data.length; row++) {
-                for (let col = 0; col < data[row].length; col++) {
-                    const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
-                    if (!ws[cellRef]) ws[cellRef] = { t: 's', v: data[row][col] };
-                    ws[cellRef].s = {
-                        border: {
-                            top: { style: "thin" },
-                            bottom: { style: "thin" },
-                            left: { style: "thin" },
-                            right: { style: "thin" }
-                        }
-                    };
-                }
-            }
-
-            XLSX.utils.book_append_sheet(wb, ws, "Recipe");
-            XLSX.writeFile(wb, `Sausage_Recipe_${recipes[currentRecipe].name}_${recipes[currentRecipe].versions[currentVersion].name}.xlsx`);
-        }
-
-        function exportRecipe() {
-            const recipeToExport = recipes[currentRecipe];
-            const recipeJSON = JSON.stringify(recipeToExport, null, 2);
-            const blob = new Blob([recipeJSON], { type: 'application/json' });
-            saveAs(blob, `${recipeToExport.name}_recipe.json`);
-        }
-
-        function importRecipe() {
-            const input = document.getElementById('importRecipeInput');
-            const file = input.files[0];
-            if (!file) {
-                alert("Please select a file to import.");
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importedRecipe = JSON.parse(e.target.result);
-                    
-                    // Validate the imported recipe structure
-                    if (!importedRecipe.name || !Array.isArray(importedRecipe.versions) || importedRecipe.versions.length === 0) {
-                        throw new Error("Invalid recipe format: Missing name or versions.");
-                    }
-
-                    importedRecipe.versions.forEach(version => {
-                        if (!version.name || !version.batchSize || !version.ingredients || !Array.isArray(version.instructions)) {
-                            throw new Error("Invalid version format: Missing required fields.");
-                        }
-                    });
-
-                    // Check for duplicate recipe names and append a suffix if necessary
-                    let newRecipeName = importedRecipe.name;
-                    let suffix = 1;
-                    while (recipes.some(recipe => recipe.name === newRecipeName)) {
-                        newRecipeName = `${importedRecipe.name} (${suffix})`;
-                        suffix++;
-                    }
-                    importedRecipe.name = newRecipeName;
-
-                    // Add the imported recipe to the list
-                    recipes.push(importedRecipe);
-                    recipes.sort((a, b) => a.name.localeCompare(b.name));
-
-                    // Update categories
-                    const category = categories.find(cat => cat.name === currentCategory);
-                    if (category && category.name !== "All Recipes") {
-                        category.recipeRefs.push(newRecipeName);
-                        category.recipeRefs.sort();
-                    }
-                    const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
-                    if (allRecipesCategory) {
-                        allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
-                    }
-
-                    currentRecipe = recipes.findIndex(recipe => recipe.name === newRecipeName);
-                    currentVersion = 0;
-
-                    saveRecipes();
-                    saveCategories();
-                    renderCategorySelect();
-                    renderRecipeTabs();
+                const button = document.createElement('button');
+                button.className = `version-tab ${index === currentVersion ? 'active' : ''}`;
+                button.textContent = version.name;
+                button.onclick = () => {
+                    currentVersion = index;
+                    loadVersion(currentVersion);
                     renderVersionTabs();
                     renderIngredients();
                     renderInstructions();
                     updateIngredients();
                     updatePageTitle();
+                };
+                versionTabs.appendChild(button);
 
-                    alert(`Recipe "${newRecipeName}" imported successfully and added to category "${currentCategory}"!`);
-                } catch (error) {
-                    console.error("Error importing recipe:", error);
-                    alert("Failed to import recipe: " + error.message);
-                }
-            };
-            reader.onerror = function() {
-                alert("Error reading the file.");
-            };
-            reader.readAsText(file);
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete-tab subtab';
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = () => deleteVersion(index);
+                versionTabs.appendChild(deleteButton);
 
-            // Reset the input field
-            input.value = '';
+                const clearButton = document.createElement('button');
+                clearButton.className = 'clear-button subtab';
+                clearButton.textContent = 'Clear';
+                clearButton.onclick = () => clearVersion(index);
+                versionTabs.appendChild(clearButton);
+            });
+
+            const addButton = document.createElement('button');
+            addButton.className = 'version-tab add';
+            addButton.textContent = '+ Add Version';
+            addButton.onclick = addVersion;
+            versionTabs.appendChild(addButton);
+
+            const deleteButtons = document.querySelectorAll('.delete-tab.subtab');
+            if (versions.length <= 1) {
+                deleteButtons.forEach(btn => btn.disabled = true);
+            } else {
+                deleteButtons.forEach(btn => btn.disabled = false);
+            }
         }
 
         function addRecipe() {
-            recipes.push({
-                name: `Recipe ${recipes.length + 1}`,
+            const newRecipeName = prompt("Enter the name of the new recipe:");
+            if (!newRecipeName || newRecipeName.trim() === "") return;
+
+            const cleanName = newRecipeName.trim();
+            if (recipes.some(recipe => recipe.name === cleanName)) {
+                alert("A recipe with this name already exists.");
+                return;
+            }
+
+            const newRecipe = {
+                name: cleanName,
                 versions: [{
                     name: "Version 1",
                     batchSize: 5,
@@ -1661,46 +1232,24 @@
                     instructions: JSON.parse(JSON.stringify(defaultInstructions)),
                     notes: defaultNotes
                 }]
-            });
-            recipes.sort((a, b) => a.name.localeCompare(b.name));
+            };
 
-            const newRecipeName = recipes[recipes.length - 1].name;
-            const category = categories.find(cat => cat.name === currentCategory);
-            if (category && category.name !== "All Recipes") {
-                category.recipeRefs.push(newRecipeName);
-                category.recipeRefs.sort();
-            }
+            recipes.push(newRecipe);
+            currentRecipe = recipes.length - 1;
+            currentVersion = 0;
+
             const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
             if (allRecipesCategory) {
-                allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
+                allRecipesCategory.recipeRefs.push(cleanName);
+                allRecipesCategory.recipeRefs.sort();
             }
-
-            currentRecipe = recipes.findIndex(recipe => recipe.name === newRecipeName);
-            currentVersion = 0;
 
             saveRecipes();
             saveCategories();
             renderCategorySelect();
             renderRecipeTabs();
             renderVersionTabs();
-            renderIngredients();
-            renderInstructions();
-            updateIngredients();
-            updatePageTitle();
-        }
-
-        function addVersion() {
-            const current = recipes[currentRecipe].versions[currentVersion];
-            recipes[currentRecipe].versions.push({
-                name: `Version ${recipes[currentRecipe].versions.length + 1}`,
-                batchSize: current.batchSize,
-                ingredients: JSON.parse(JSON.stringify(current.ingredients)),
-                instructions: JSON.parse(JSON.stringify(current.instructions)),
-                notes: current.notes
-            });
-            currentVersion = recipes[currentRecipe].versions.length - 1;
-            saveRecipes();
-            renderVersionTabs();
+            loadVersion(currentVersion);
             renderIngredients();
             renderInstructions();
             updateIngredients();
@@ -1714,32 +1263,106 @@
             }
 
             const recipeName = recipes[index].name;
-            recipes.splice(index, 1);
-            recipes.sort((a, b) => a.name.localeCompare(b.name));
+            if (confirm(`Are you sure you want to delete the recipe "${recipeName}"?`)) {
+                recipes.splice(index, 1);
+                categories.forEach(category => {
+                    category.recipeRefs = category.recipeRefs.filter(ref => ref !== recipeName);
+                });
 
-            // Update categories
-            categories.forEach(cat => {
-                cat.recipeRefs = cat.recipeRefs.filter(name => name !== recipeName);
+                if (currentRecipe >= recipes.length) {
+                    currentRecipe = recipes.length - 1;
+                }
+                currentVersion = 0;
+
+                saveRecipes();
+                saveCategories();
+                renderCategorySelect();
+                renderRecipeTabs();
+                renderVersionTabs();
+                loadVersion(currentVersion);
+                renderIngredients();
+                renderInstructions();
+                updateIngredients();
+                updatePageTitle();
+            }
+        }
+
+        function openCategoryAssignModal(recipeIndex) {
+            currentRecipeForAssignment = recipeIndex;
+            const modal = document.getElementById('categoryAssignModal');
+            const checkboxes = document.getElementById('categoryCheckboxes');
+            checkboxes.innerHTML = '';
+
+            categories.forEach(category => {
+                if (category.name !== "All Recipes") {
+                    const div = document.createElement('div');
+                    div.className = 'category-checkbox';
+                    const input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.id = `category_${category.name}`;
+                    input.checked = category.recipeRefs.includes(recipes[recipeIndex].name);
+                    const label = document.createElement('label');
+                    label.htmlFor = input.id;
+                    label.textContent = category.name;
+                    div.appendChild(input);
+                    div.appendChild(label);
+                    checkboxes.appendChild(div);
+                }
             });
-            const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
-            if (allRecipesCategory) {
-                allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
-            }
 
-            const category = categories.find(cat => cat.name === currentCategory);
-            const recipeNames = category ? category.recipeRefs : [];
-            let newRecipeIndex = recipes.findIndex(recipe => recipeNames.includes(recipe.name));
-            if (newRecipeIndex === -1) {
-                newRecipeIndex = 0;
-            }
-            currentRecipe = newRecipeIndex;
-            currentVersion = 0;
+            modal.style.display = 'flex';
+        }
 
-            saveRecipes();
+        function saveCategoryAssignments() {
+            const recipeName = recipes[currentRecipeForAssignment].name;
+            categories.forEach(category => {
+                if (category.name !== "All Recipes") {
+                    const checkbox = document.getElementById(`category_${category.name}`);
+                    if (checkbox.checked && !category.recipeRefs.includes(recipeName)) {
+                        category.recipeRefs.push(recipeName);
+                        category.recipeRefs.sort();
+                    } else if (!checkbox.checked && category.recipeRefs.includes(recipeName)) {
+                        category.recipeRefs = category.recipeRefs.filter(ref => ref !== recipeName);
+                    }
+                }
+            });
+
             saveCategories();
             renderCategorySelect();
             renderRecipeTabs();
+            closeCategoryAssignModal();
+        }
+
+        function closeCategoryAssignModal() {
+            document.getElementById('categoryAssignModal').style.display = 'none';
+            currentRecipeForAssignment = null;
+        }
+
+        function addVersion() {
+            const newVersionName = prompt("Enter the name of the new version:");
+            if (!newVersionName || newVersionName.trim() === "") return;
+
+            const cleanName = newVersionName.trim();
+            const versions = recipes[currentRecipe].versions;
+            if (versions.some(version => version.name === cleanName)) {
+                alert("A version with this name already exists.");
+                return;
+            }
+
+            const newVersion = {
+                name: cleanName,
+                batchSize: 5,
+                ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
+                instructions: JSON.parse(JSON.stringify(defaultInstructions)),
+                notes: defaultNotes
+            };
+
+            versions.push(newVersion);
+            currentVersion = versions.length - 1;
+
+            saveRecipes();
             renderVersionTabs();
+            loadVersion(currentVersion);
             renderIngredients();
             renderInstructions();
             updateIngredients();
@@ -1747,89 +1370,263 @@
         }
 
         function deleteVersion(index) {
-            if (recipes[currentRecipe].versions.length <= 1) {
+            const versions = recipes[currentRecipe].versions;
+            if (versions.length <= 1) {
                 alert("You must keep at least one version.");
                 return;
             }
 
-            recipes[currentRecipe].versions.splice(index, 1);
-            if (currentVersion >= recipes[currentRecipe].versions.length) {
-                currentVersion = recipes[currentRecipe].versions.length - 1;
+            if (confirm(`Are you sure you want to delete "${versions[index].name}"?`)) {
+                versions.splice(index, 1);
+                if (currentVersion >= versions.length) {
+                    currentVersion = versions.length - 1;
+                }
+
+                saveRecipes();
+                renderVersionTabs();
+                loadVersion(currentVersion);
+                renderIngredients();
+                renderInstructions();
+                updateIngredients();
+                updatePageTitle();
             }
+        }
+
+        function clearVersion(index) {
+            if (confirm(`Are you sure you want to clear all ingredients and instructions for "${recipes[currentRecipe].versions[index].name}"?`)) {
+                recipes[currentRecipe].versions[index].ingredients = JSON.parse(JSON.stringify(defaultIngredients));
+                recipes[currentRecipe].versions[index].instructions = JSON.parse(JSON.stringify(defaultInstructions));
+                recipes[currentRecipe].versions[index].notes = defaultNotes;
+                recipes[currentRecipe].versions[index].batchSize = 5;
+
+                if (index === currentVersion) {
+                    renderIngredients();
+                    renderInstructions();
+                    updateIngredients();
+                }
+
+                saveRecipes();
+            }
+        }
+
+        function loadVersion(index) {
+            const version = recipes[currentRecipe].versions[index];
+            document.getElementById('batchSize').value = version.batchSize;
+        }
+
+        function updateIngredients() {
+            const batchSize = parseFloat(document.getElementById('batchSize').value) || 5;
+            const ingredients = recipes[currentRecipe].versions[currentVersion].ingredients;
+            recipes[currentRecipe].versions[currentVersion].batchSize = batchSize;
+
+            const ingredientBody = document.getElementById('ingredientBody');
+            ingredientBody.innerHTML = '';
+
+            let totalPercentage = 0;
+            let totalFatPercentage = 0;
+            let totalMeatPercentage = 0;
+
+            Object.entries(ingredients).forEach(([key, ingredient]) => {
+                const percentageInput = document.getElementById(key);
+                if (percentageInput) {
+                    ingredient.percentage = parseFloat(percentageInput.value) || 0;
+                }
+                totalPercentage += ingredient.percentage;
+
+                if (ingredient.isMeat && ingredient.fatRatio) {
+                    const meatPercentage = ingredient.percentage;
+                    const fatRatio = ingredient.fatRatio / 100;
+                    totalFatPercentage += meatPercentage * fatRatio;
+                    totalMeatPercentage += meatPercentage;
+                }
+            });
+
+            const scalingFactor = totalPercentage !== 100 ? 100 / totalPercentage : 1;
+            if (totalPercentage !== 100) {
+                Object.values(ingredients).forEach(ingredient => {
+                    ingredient.percentage *= scalingFactor;
+                });
+                totalFatPercentage *= scalingFactor;
+                totalMeatPercentage *= scalingFactor;
+            }
+
+            const overallFatPercentage = totalMeatPercentage > 0 ? (totalFatPercentage / totalMeatPercentage * 100).toFixed(1) : 0;
+            document.getElementById('overallFatPercentage').textContent = `${overallFatPercentage}%`;
+
+            Object.entries(ingredients).forEach(([key, ingredient]) => {
+                const amountLbs = (ingredient.percentage / 100) * batchSize;
+                const amountOz = amountLbs * 16;
+                const amountG = amountLbs * 453.592;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${ingredient.name}</td>
+                    <td>${amountLbs.toFixed(2)}</td>
+                    <td>${amountOz.toFixed(2)}</td>
+                    <td>${amountG.toFixed(0)}</td>
+                    <td>${ingredient.percentage.toFixed(2)}%</td>
+                `;
+                ingredientBody.appendChild(row);
+            });
+
             saveRecipes();
-            renderVersionTabs();
             renderIngredients();
-            renderInstructions();
-            updateIngredients();
-            updatePageTitle();
-        }
-
-        function clearRecipes() {
-            if (confirm("Are you sure you want to clear all recipes? This will reset the calculator to a single default recipe.")) {
-                recipes = [{
-                    name: "Summer Sausage",
-                    versions: [{
-                        name: "Version 1",
-                        batchSize: 5,
-                        ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
-                        instructions: JSON.parse(JSON.stringify(defaultInstructions)),
-                        notes: defaultNotes
-                    }]
-                }];
-                categories = [
-                    { name: "All Recipes", recipeRefs: ["Summer Sausage"], isFixed: true },
-                    { name: "Sausage", recipeRefs: ["Summer Sausage"] }
-                ];
-                currentCategory = "All Recipes";
-                currentRecipe = 0;
-                currentVersion = 0;
-                saveRecipes();
-                saveCategories();
-                renderCategorySelect();
-                renderRecipeTabs();
-                renderVersionTabs();
-                renderIngredients();
-                renderInstructions();
-                updateIngredients();
-                updatePageTitle();
-            }
-        }
-
-        function clearVersions() {
-            if (confirm("Are you sure you want to clear all versions for this recipe? This will reset the recipe to a single default version.")) {
-                recipes[currentRecipe].versions = [{
-                    name: "Version 1",
-                    batchSize: 5,
-                    ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
-                    instructions: JSON.parse(JSON.stringify(defaultInstructions)),
-                    notes: defaultNotes
-                }];
-                currentVersion = 0;
-                saveRecipes();
-                renderVersionTabs();
-                renderIngredients();
-                renderInstructions();
-                updateIngredients();
-                updatePageTitle();
-            }
         }
 
         function resetInstructions() {
-            if (confirm("Are you sure you want to reset the instructions to their default values? This will clear any edits you made.")) {
-                const version = recipes[currentRecipe].versions[currentVersion];
-                version.instructions = JSON.parse(JSON.stringify(defaultInstructions));
-                version.notes = defaultNotes;
+            if (confirm("Are you sure you want to reset the instructions and notes to their defaults?")) {
+                recipes[currentRecipe].versions[currentVersion].instructions = JSON.parse(JSON.stringify(defaultInstructions));
+                recipes[currentRecipe].versions[currentVersion].notes = defaultNotes;
                 saveRecipes();
                 renderInstructions();
             }
         }
 
+        function exportToExcel() {
+            const version = recipes[currentRecipe].versions[currentVersion];
+            const workbook = XLSX.utils.book_new();
+            const worksheetData = [
+                ['Ingredient', 'Amount (lbs)', 'Amount (oz)', 'Amount (g)', 'Percentage']
+            ];
+
+            Object.values(version.ingredients).forEach(ingredient => {
+                const amountLbs = (ingredient.percentage / 100) * version.batchSize;
+                const amountOz = amountLbs * 16;
+                const amountG = amountLbs * 453.592;
+                worksheetData.push([
+                    ingredient.name,
+                    amountLbs.toFixed(2),
+                    amountOz.toFixed(2),
+                    amountG.toFixed(0),
+                    `${ingredient.percentage.toFixed(2)}%`
+                ]);
+            });
+
+            const overallFat = document.getElementById('overallFatPercentage').textContent;
+            worksheetData.push([], ['Overall Fat %', overallFat]);
+
+            const instructions = version.instructions.map(step => ({
+                Step: step.title,
+                Details: step.content.replace(/<[^>]+>/g, '').replace(/\n/g, ' ')
+            }));
+            const notes = version.notes.replace(/<[^>]+>/g, '').replace(/\n/g, ' ');
+
+            const worksheet = XLSX.utils.json_to_sheet(worksheetData, { skipHeader: true });
+            XLSX.utils.sheet_add_json(worksheet, instructions, { origin: -1, skipHeader: false });
+            XLSX.utils.sheet_add_json(worksheet, [{ Notes: notes }], { origin: -1, skipHeader: false });
+
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Recipe');
+            const filename = `${recipes[currentRecipe].name}_${version.name}.xlsx`;
+            XLSX.write(workbook, filename);
+        }
+
+        function exportRecipe() {
+            const version = recipes[currentRecipe].versions[currentVersion];
+            const recipeData = {
+                name: recipes[currentRecipe].name,
+                version: version.name,
+                batchSize: version.batchSize,
+                ingredients: version.ingredients,
+                instructions: version.instructions,
+                notes: version.notes
+            };
+
+            const blob = new Blob([JSON.stringify(recipeData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${recipeData.name}_${recipeData.version}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importRecipe() {
+            const fileInput = document.getElementById('importRecipeInput');
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const recipeData = JSON.parse(e.target.result);
+                    const recipeIndex = recipes.findIndex(r => r.name === recipeData.name);
+                    let versionIndex;
+
+                    if (recipeIndex === -1) {
+                        recipes.push({
+                            name: recipeData.name,
+                            versions: [{
+                                name: recipeData.version,
+                                batchSize: recipeData.batchSize,
+                                ingredients: recipeData.ingredients,
+                                instructions: recipeData.instructions,
+                                notes: recipeData.notes
+                            }]
+                        });
+                        currentRecipe = recipes.length - 1;
+                        versionIndex = 0;
+
+                        const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
+                        if (allRecipesCategory) {
+                            allRecipesCategory.recipeRefs.push(recipeData.name);
+                            allRecipesCategory.recipeRefs.sort();
+                        }
+                    } else {
+                        const versions = recipes[recipeIndex].versions;
+                        versionIndex = versions.findIndex(v => v.name === recipeData.version);
+                        if (versionIndex === -1) {
+                            versions.push({
+                                name: recipeData.version,
+                                batchSize: recipeData.batchSize,
+                                ingredients: recipeData.ingredients,
+                                instructions: recipeData.instructions,
+                                notes: recipeData.notes
+                            });
+                            versionIndex = versions.length - 1;
+                        } else {
+                            versions[versionIndex] = {
+                                name: recipeData.version,
+                                batchSize: recipeData.batchSize,
+                                ingredients: recipeData.ingredients,
+                                instructions: recipeData.instructions,
+                                notes: recipeData.notes
+                            };
+                        }
+                        currentRecipe = recipeIndex;
+                    }
+
+                    currentVersion = versionIndex;
+                    saveRecipes();
+                    saveCategories();
+                    renderCategorySelect();
+                    renderRecipeTabs();
+                    renderVersionTabs();
+                    loadVersion(currentVersion);
+                    renderIngredients();
+                    renderInstructions();
+                    updateIngredients();
+                    updatePageTitle();
+                } catch (error) {
+                    alert("Failed to import recipe: Invalid JSON format.");
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+            fileInput.value = '';
+        }
+
         function saveRecipes() {
-            localStorage.setItem('sausageRecipes', JSON.stringify(recipes));
+            database.ref('sausageRecipes').set(recipes).catch(error => {
+                console.error("Error saving recipes:", error);
+                alert("Failed to save recipes to Firebase.");
+            });
         }
 
         function saveCategories() {
-            localStorage.setItem('sausageCategories', JSON.stringify(categories));
+            database.ref('sausageCategories').set(categories).catch(error => {
+                console.error("Error saving categories:", error);
+                alert("Failed to save categories to Firebase.");
+            });
         }
     </script>
 </body>
