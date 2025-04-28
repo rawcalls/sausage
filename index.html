@@ -6,6 +6,7 @@
     <title>Grandpa's Summer Sausage Calculator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -197,7 +198,7 @@
             background-color: #cc0000;
         }
         .category-button.edit, .assign-button {
-            background-color: #9c27b0; /* Purple color for Assign to Categories */
+            background-color: #9c27b0;
             color: white;
         }
         .category-button.edit:hover, .assign-button:hover {
@@ -210,7 +211,7 @@
         .category-button.delete:hover {
             background-color: #cc0000;
         }
-        .clear-button, .reset-button, .export-button, .import-button, .print-button {
+        .clear-button, .reset-button, .export-button, .import-button, .print-button, .share-button {
             padding: 8px 16px;
             color: white;
             border: none;
@@ -251,6 +252,12 @@
             background-color: #607d8b;
         }
         .print-button:hover {
+            background-color: #546e7a;
+        }
+        .share-button {
+            background-color: #607d8b;
+        }
+        .share-button:hover {
             background-color: #546e7a;
         }
         [contenteditable="true"] {
@@ -346,6 +353,53 @@
         }
         .delete-step:hover {
             background-color: #cc0000;
+        }
+        #screenshotContainer {
+            position: absolute;
+            top: -9999px;
+            width: 800px;
+            background-color: white;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #screenshotContainer h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #333;
+        }
+        #screenshotContainer table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            background-color: white;
+            font-size: 12px;
+        }
+        #screenshotContainer th, #screenshotContainer td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+        }
+        #screenshotContainer th {
+            background: #f2f2f2;
+        }
+        #screenshotContainer .directions {
+            font-size: 12px;
+            padding: 10px;
+            background-color: transparent;
+            margin: 10px 0;
+        }
+        #screenshotContainer h2, #screenshotContainer h3 {
+            font-size: 16px;
+            margin: 10px 0;
+            color: #333;
+        }
+        #screenshotContainer ol, #screenshotContainer ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        #screenshotContainer .reset-button, #screenshotContainer .edit-step, #screenshotContainer .delete-step {
+            display: none;
         }
         @media print {
             body {
@@ -443,6 +497,7 @@
             <input type="file" id="importRecipeInput" accept=".json" onchange="importRecipe()" style="display: none;">
         </label>
         <button class="print-button" onclick="window.print()">Print</button>
+        <button class="share-button" onclick="shareScreenshot()">Share</button>
     </div>
 
     <table id="ingredientTable">
@@ -467,6 +522,8 @@
         </ul>
         <button class="reset-button" onclick="resetInstructions()">Reset Instructions</button>
     </div>
+
+    <div id="screenshotContainer"></div>
 
     <div id="meatPromptModal" class="modal">
         <div class="modal-content">
@@ -626,6 +683,65 @@
             const versionName = recipes[currentRecipe].versions[currentVersion].name;
             const pageTitle = document.getElementById('pageTitle');
             pageTitle.textContent = `${recipeName}/${versionName} Calculator`;
+        }
+
+        function shareScreenshot() {
+            if (!window.html2canvas) {
+                alert("Screenshot functionality is unavailable. Please ensure the html2canvas library is loaded.");
+                return;
+            }
+
+            const container = document.getElementById('screenshotContainer');
+            container.innerHTML = '';
+
+            const title = document.createElement('h1');
+            title.textContent = document.getElementById('pageTitle').textContent.replace(' Calculator', '');
+            container.appendChild(title);
+
+            const table = document.getElementById('ingredientTable').cloneNode(true);
+            container.appendChild(table);
+
+            const directions = document.createElement('div');
+            directions.className = 'directions';
+            const instructionsTitle = document.createElement('h2');
+            instructionsTitle.textContent = 'Instructions';
+            directions.appendChild(instructionsTitle);
+            const instructions = document.getElementById('instructionsList').cloneNode(true);
+            directions.appendChild(instructions);
+            const notesTitle = document.createElement('h3');
+            notesTitle.textContent = 'Notes';
+            directions.appendChild(notesTitle);
+            const notes = document.getElementById('notesList').cloneNode(true);
+            directions.appendChild(notes);
+            container.appendChild(directions);
+
+            html2canvas(container, { scale: 2 }).then(canvas => {
+                canvas.toBlob(blob => {
+                    const file = new File([blob], 'recipe-screenshot.png', { type: 'image/png' });
+                    if (navigator.share) {
+                        navigator.share({
+                            files: [file],
+                            title: title.textContent,
+                            text: 'Check out this sausage recipe!'
+                        }).catch(error => {
+                            console.error('Error sharing:', error);
+                            fallbackDownload(canvas);
+                        });
+                    } else {
+                        fallbackDownload(canvas);
+                    }
+                }, 'image/png');
+            }).catch(error => {
+                console.error('Error generating screenshot:', error);
+                alert('Failed to generate screenshot. Please try again.');
+            });
+
+            function fallbackDownload(canvas) {
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = 'recipe-screenshot.png';
+                link.click();
+            }
         }
 
         function renderInstructions() {
