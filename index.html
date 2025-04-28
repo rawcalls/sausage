@@ -153,7 +153,7 @@
         .recipe-tab.add:hover, .version-tab.add:hover, .category-button.add:hover {
             background-color: #555;
         }
-        .delete-tab, .category-button.edit, .category-button.delete {
+        .delete-tab, .category-button.edit, .category-button.delete, .assign-button {
             margin-left: 5px;
             padding: 8px 12px;
             border: none;
@@ -172,11 +172,11 @@
         .delete-tab:hover {
             background-color: #cc0000;
         }
-        .category-button.edit {
+        .category-button.edit, .assign-button {
             background-color: #2196F3;
             color: white;
         }
-        .category-button.edit:hover {
+        .category-button.edit:hover, .assign-button:hover {
             background-color: #1976D2;
         }
         .category-button.delete {
@@ -249,7 +249,7 @@
             padding: 20px;
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-            text-align: center;
+            text-align: left;
             max-width: 400px;
             width: 90%;
         }
@@ -279,6 +279,14 @@
         }
         .modal-button.no:hover {
             background-color: #cc0000;
+        }
+        .category-checkbox {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+        .category-checkbox label {
+            margin-left: 10px;
         }
         .overall-fat-box {
             padding: 8px;
@@ -390,12 +398,24 @@
         </div>
     </div>
 
+    <div id="categoryAssignModal" class="modal">
+        <div class="modal-content">
+            <h3>Assign Recipe to Categories</h3>
+            <div id="categoryCheckboxes"></div>
+            <div class="modal-buttons">
+                <button class="modal-button yes" onclick="saveCategoryAssignments()">Save</button>
+                <button class="modal-button no" onclick="closeCategoryAssignModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let recipes = [];
         let categories = [];
         let currentCategory = "All Recipes";
         let currentRecipe = 0;
         let currentVersion = 0;
+        let currentRecipeForAssignment = null;
 
         const defaultInstructions = [
             {
@@ -841,6 +861,63 @@
             updatePageTitle();
         }
 
+        function showCategoryAssignModal(recipeIndex) {
+            currentRecipeForAssignment = recipeIndex;
+            const modal = document.getElementById('categoryAssignModal');
+            const checkboxesContainer = document.getElementById('categoryCheckboxes');
+            checkboxesContainer.innerHTML = '';
+
+            const recipeName = recipes[recipeIndex].name;
+            const nonFixedCategories = categories.filter(cat => !cat.isFixed);
+
+            nonFixedCategories.forEach(category => {
+                const div = document.createElement('div');
+                div.className = 'category-checkbox';
+                const isChecked = category.recipeRefs.includes(recipeName);
+                div.innerHTML = `
+                    <input type="checkbox" id="cat_${category.name}" ${isChecked ? 'checked' : ''}>
+                    <label for="cat_${category.name}">${category.name}</label>
+                `;
+                checkboxesContainer.appendChild(div);
+            });
+
+            modal.style.display = 'flex';
+        }
+
+        function closeCategoryAssignModal() {
+            const modal = document.getElementById('categoryAssignModal');
+            modal.style.display = 'none';
+            currentRecipeForAssignment = null;
+        }
+
+        function saveCategoryAssignments() {
+            const recipeName = recipes[currentRecipeForAssignment].name;
+            const nonFixedCategories = categories.filter(cat => !cat.isFixed);
+
+            nonFixedCategories.forEach(category => {
+                const checkbox = document.getElementById(`cat_${category.name}`);
+                if (checkbox.checked) {
+                    if (!category.recipeRefs.includes(recipeName)) {
+                        category.recipeRefs.push(recipeName);
+                        category.recipeRefs.sort();
+                    }
+                } else {
+                    category.recipeRefs = category.recipeRefs.filter(name => name !== recipeName);
+                }
+            });
+
+            // Update "All Recipes" category
+            const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
+            if (allRecipesCategory) {
+                allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
+            }
+
+            saveCategories();
+            closeCategoryAssignModal();
+            renderCategorySelect();
+            renderRecipeTabs();
+        }
+
         function renderRecipeTabs() {
             const tabsContainer = document.getElementById('recipeTabs');
             tabsContainer.innerHTML = '';
@@ -878,6 +955,12 @@
                 tab.addEventListener('touchcancel', () => clearTimeout(pressTimer));
 
                 tabsContainer.appendChild(tab);
+
+                const assignButton = document.createElement('button');
+                assignButton.className = 'assign-button';
+                assignButton.textContent = 'Assign to Categories';
+                assignButton.onclick = () => showCategoryAssignModal(globalIndex);
+                tabsContainer.appendChild(assignButton);
 
                 const deleteButton = document.createElement('button');
                 deleteButton.className = 'delete-tab';
