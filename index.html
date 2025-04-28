@@ -32,10 +32,12 @@
             font-weight: bold;
             margin-right: 10px;
         }
-        input[type="number"], input[type="text"], input[type="file"] {
+        input[type="number"], input[type="text"], input[type="file"], select {
             padding: 5px;
-            width: 80px;
             font-size: 16px;
+        }
+        input[type="number"], input[type="text"] {
+            width: 80px;
         }
         input[type="text"] {
             width: 150px;
@@ -103,10 +105,11 @@
         .tabs-container {
             margin: 20px 0;
         }
-        .recipe-tabs, .version-tabs {
+        .recipe-tabs, .version-tabs, .category-section {
             display: flex;
             flex-wrap: wrap;
             padding: 5px 0;
+            align-items: center;
         }
         .recipe-tabs {
             border-bottom: 1px solid #ddd;
@@ -144,27 +147,43 @@
         .version-tab:hover {
             background-color: #45a049;
         }
-        .recipe-tab.add, .version-tab.add {
+        .recipe-tab.add, .version-tab.add, .category-button.add {
             background-color: #666;
         }
-        .recipe-tab.add:hover, .version-tab.add:hover {
+        .recipe-tab.add:hover, .version-tab.add:hover, .category-button.add:hover {
             background-color: #555;
         }
-        .delete-tab {
+        .delete-tab, .category-button.edit, .category-button.delete {
             margin-left: 5px;
             padding: 8px 12px;
-            background-color: #ff4444;
-            color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 14px;
+        }
+        .delete-tab {
+            background-color: #ff4444;
+            color: white;
         }
         .delete-tab.subtab {
             padding: 6px 10px;
             font-size: 13px;
         }
         .delete-tab:hover {
+            background-color: #cc0000;
+        }
+        .category-button.edit {
+            background-color: #2196F3;
+            color: white;
+        }
+        .category-button.edit:hover {
+            background-color: #1976D2;
+        }
+        .category-button.delete {
+            background-color: #ff4444;
+            color: white;
+        }
+        .category-button.delete:hover {
             background-color: #cc0000;
         }
         .clear-button, .reset-button, .export-button, .import-button {
@@ -295,6 +314,15 @@
 <body>
     <h1 id="pageTitle">Grandpa's Summer Sausage/Version 1 Calculator</h1>
 
+    <div class="category-section" id="categorySection">
+        <label for="categorySelect">Category:</label>
+        <select id="categorySelect" onchange="switchCategory(this.value)">
+        </select>
+        <button class="category-button add" onclick="addCategory()">Add</button>
+        <button class="category-button edit" onclick="editCategory()">Edit</button>
+        <button class="category-button delete" onclick="deleteCategory()">Delete</button>
+    </div>
+
     <div class="tabs-container">
         <div class="recipe-tabs" id="recipeTabs">
         </div>
@@ -362,8 +390,10 @@
         </div>
     </div>
 
-    <    <script>
+    <script>
         let recipes = [];
+        let categories = [];
+        let currentCategory = "All Recipes";
         let currentRecipe = 0;
         let currentVersion = 0;
 
@@ -446,6 +476,7 @@
             try {
                 console.log("DOMContentLoaded triggered");
                 const savedRecipes = localStorage.getItem('sausageRecipes');
+                const savedCategories = localStorage.getItem('sausageCategories');
                 if (savedRecipes) {
                     console.log("Loading saved recipes from localStorage");
                     recipes = JSON.parse(savedRecipes);
@@ -462,10 +493,22 @@
                         }]
                     });
                 }
+                if (savedCategories) {
+                    console.log("Loading saved categories from localStorage");
+                    categories = JSON.parse(savedCategories);
+                } else {
+                    console.log("No saved categories, initializing default categories");
+                    categories = [
+                        { name: "All Recipes", recipeRefs: ["Summer Sausage"], isFixed: true },
+                        { name: "Sausage", recipeRefs: ["Summer Sausage"] }
+                    ];
+                }
+                currentCategory = "All Recipes";
                 currentRecipe = 0;
                 currentVersion = 0;
-                console.log("Current recipe:", currentRecipe, "Current version:", currentVersion);
+                console.log("Current category:", currentCategory, "Current recipe:", currentRecipe, "Current version:", currentVersion);
 
+                renderCategorySelect();
                 renderRecipeTabs();
                 renderVersionTabs();
                 loadVersion(currentVersion);
@@ -686,20 +729,141 @@
             updateIngredients();
         }
 
+        function renderCategorySelect() {
+            const select = document.getElementById('categorySelect');
+            select.innerHTML = '';
+
+            // Sort categories: "All Recipes" first, then alphabetically
+            const sortedCategories = [...categories].sort((a, b) => {
+                if (a.name === "All Recipes") return -1;
+                if (b.name === "All Recipes") return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            sortedCategories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.name;
+                option.textContent = category.name;
+                if (category.name === currentCategory) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+
+            // Update "All Recipes" category
+            const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
+            if (allRecipesCategory) {
+                allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
+                saveCategories();
+            }
+        }
+
+        function addCategory() {
+            const newCategoryName = prompt("Enter the name of the new category:");
+            if (!newCategoryName || newCategoryName.trim() === "") return;
+
+            const cleanName = newCategoryName.trim();
+            if (categories.some(cat => cat.name === cleanName)) {
+                alert("A category with this name already exists.");
+                return;
+            }
+
+            categories.push({ name: cleanName, recipeRefs: [] });
+            saveCategories();
+            renderCategorySelect();
+        }
+
+        function editCategory() {
+            if (currentCategory === "All Recipes") {
+                alert("Cannot edit the 'All Recipes' category.");
+                return;
+            }
+
+            const newName = prompt("Enter the new name for this category:", currentCategory);
+            if (!newName || newName.trim() === "") return;
+
+            const cleanName = newName.trim();
+            if (categories.some(cat => cat.name === cleanName && cat.name !== currentCategory)) {
+                alert("A category with this name already exists.");
+                return;
+            }
+
+            const category = categories.find(cat => cat.name === currentCategory);
+            if (category) {
+                category.name = cleanName;
+                currentCategory = cleanName;
+                saveCategories();
+                renderCategorySelect();
+            }
+        }
+
+        function deleteCategory() {
+            if (currentCategory === "All Recipes") {
+                alert("Cannot delete the 'All Recipes' category.");
+                return;
+            }
+
+            if (confirm(`Are you sure you want to delete the category "${currentCategory}"?`)) {
+                categories = categories.filter(cat => cat.name !== currentCategory);
+                currentCategory = "All Recipes";
+                saveCategories();
+                renderCategorySelect();
+                renderRecipeTabs();
+                renderVersionTabs();
+                loadVersion(currentVersion);
+                renderIngredients();
+                renderInstructions();
+                updateIngredients();
+                updatePageTitle();
+            }
+        }
+
+        function switchCategory(categoryName) {
+            currentCategory = categoryName;
+            const category = categories.find(cat => cat.name === currentCategory);
+            const recipeNames = category ? category.recipeRefs : [];
+            
+            // Find the first recipe in the category
+            let newRecipeIndex = recipes.findIndex(recipe => recipeNames.includes(recipe.name));
+            if (newRecipeIndex === -1) {
+                newRecipeIndex = 0;
+            }
+
+            currentRecipe = newRecipeIndex;
+            currentVersion = 0;
+
+            renderRecipeTabs();
+            renderVersionTabs();
+            loadVersion(currentVersion);
+            renderIngredients();
+            renderInstructions();
+            updateIngredients();
+            updatePageTitle();
+        }
+
         function renderRecipeTabs() {
             const tabsContainer = document.getElementById('recipeTabs');
             tabsContainer.innerHTML = '';
 
-            recipes.forEach((recipe, index) => {
+            const category = categories.find(cat => cat.name === currentCategory);
+            const recipeNames = category ? category.recipeRefs : [];
+
+            // Filter and sort recipes based on the current category
+            const filteredRecipes = recipes
+                .filter(recipe => recipeNames.includes(recipe.name))
+                .sort((a, b) => a.name.localeCompare(b.name));
+
+            filteredRecipes.forEach((recipe, index) => {
+                const globalIndex = recipes.findIndex(r => r.name === recipe.name);
                 const tab = document.createElement('button');
-                tab.className = 'recipe-tab' + (index === currentRecipe ? ' active' : '');
+                tab.className = 'recipe-tab' + (globalIndex === currentRecipe ? ' active' : '');
                 tab.textContent = recipe.name;
                 
                 tab.onclick = (e) => {
                     if (e.shiftKey) {
-                        renameRecipe(index);
+                        renameRecipe(globalIndex);
                     } else {
-                        switchRecipe(index);
+                        switchRecipe(globalIndex);
                     }
                 };
 
@@ -707,7 +871,7 @@
                 tab.addEventListener('touchstart', (e) => {
                     pressTimer = setTimeout(() => {
                         e.preventDefault();
-                        renameRecipe(index);
+                        renameRecipe(globalIndex);
                     }, 1000);
                 });
                 tab.addEventListener('touchend', () => clearTimeout(pressTimer));
@@ -718,7 +882,7 @@
                 const deleteButton = document.createElement('button');
                 deleteButton.className = 'delete-tab';
                 deleteButton.textContent = 'Delete';
-                deleteButton.onclick = () => deleteRecipe(index);
+                deleteButton.onclick = () => deleteRecipe(globalIndex);
                 tabsContainer.appendChild(deleteButton);
             });
 
@@ -786,10 +950,26 @@
         }
 
         function renameRecipe(index) {
-            const newName = prompt("Enter a new name for this recipe:", recipes[index].name);
+            const oldName = recipes[index].name;
+            const newName = prompt("Enter a new name for this recipe:", oldName);
             if (newName && newName.trim() !== "") {
-                recipes[index].name = newName.trim();
+                const trimmedName = newName.trim();
+                if (recipes.some(recipe => recipe.name === trimmedName && recipe.name !== oldName)) {
+                    alert("A recipe with this name already exists.");
+                    return;
+                }
+                recipes[index].name = trimmedName;
+                // Update categories
+                categories.forEach(cat => {
+                    const refIndex = cat.recipeRefs.indexOf(oldName);
+                    if (refIndex !== -1) {
+                        cat.recipeRefs[refIndex] = trimmedName;
+                        cat.recipeRefs.sort();
+                    }
+                });
                 saveRecipes();
+                saveCategories();
+                renderCategorySelect();
                 renderRecipeTabs();
                 updatePageTitle();
             }
@@ -1100,10 +1280,25 @@
 
                     // Add the imported recipe to the list
                     recipes.push(importedRecipe);
-                    currentRecipe = recipes.length - 1;
+                    recipes.sort((a, b) => a.name.localeCompare(b.name));
+
+                    // Update categories
+                    const category = categories.find(cat => cat.name === currentCategory);
+                    if (category && category.name !== "All Recipes") {
+                        category.recipeRefs.push(newRecipeName);
+                        category.recipeRefs.sort();
+                    }
+                    const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
+                    if (allRecipesCategory) {
+                        allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
+                    }
+
+                    currentRecipe = recipes.findIndex(recipe => recipe.name === newRecipeName);
                     currentVersion = 0;
 
                     saveRecipes();
+                    saveCategories();
+                    renderCategorySelect();
                     renderRecipeTabs();
                     renderVersionTabs();
                     renderIngredients();
@@ -1111,7 +1306,7 @@
                     updateIngredients();
                     updatePageTitle();
 
-                    alert(`Recipe "${newRecipeName}" imported successfully!`);
+                    alert(`Recipe "${newRecipeName}" imported successfully and added to category "${currentCategory}"!`);
                 } catch (error) {
                     console.error("Error importing recipe:", error);
                     alert("Failed to import recipe: " + error.message);
@@ -1137,9 +1332,25 @@
                     notes: defaultNotes
                 }]
             });
-            currentRecipe = recipes.length - 1;
+            recipes.sort((a, b) => a.name.localeCompare(b.name));
+
+            const newRecipeName = recipes[recipes.length - 1].name;
+            const category = categories.find(cat => cat.name === currentCategory);
+            if (category && category.name !== "All Recipes") {
+                category.recipeRefs.push(newRecipeName);
+                category.recipeRefs.sort();
+            }
+            const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
+            if (allRecipesCategory) {
+                allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
+            }
+
+            currentRecipe = recipes.findIndex(recipe => recipe.name === newRecipeName);
             currentVersion = 0;
+
             saveRecipes();
+            saveCategories();
+            renderCategorySelect();
             renderRecipeTabs();
             renderVersionTabs();
             renderIngredients();
@@ -1172,12 +1383,31 @@
                 return;
             }
 
+            const recipeName = recipes[index].name;
             recipes.splice(index, 1);
-            if (currentRecipe >= recipes.length) {
-                currentRecipe = recipes.length - 1;
+            recipes.sort((a, b) => a.name.localeCompare(b.name));
+
+            // Update categories
+            categories.forEach(cat => {
+                cat.recipeRefs = cat.recipeRefs.filter(name => name !== recipeName);
+            });
+            const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
+            if (allRecipesCategory) {
+                allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
             }
+
+            const category = categories.find(cat => cat.name === currentCategory);
+            const recipeNames = category ? category.recipeRefs : [];
+            let newRecipeIndex = recipes.findIndex(recipe => recipeNames.includes(recipe.name));
+            if (newRecipeIndex === -1) {
+                newRecipeIndex = 0;
+            }
+            currentRecipe = newRecipeIndex;
             currentVersion = 0;
+
             saveRecipes();
+            saveCategories();
+            renderCategorySelect();
             renderRecipeTabs();
             renderVersionTabs();
             renderIngredients();
@@ -1216,9 +1446,16 @@
                         notes: defaultNotes
                     }]
                 }];
+                categories = [
+                    { name: "All Recipes", recipeRefs: ["Summer Sausage"], isFixed: true },
+                    { name: "Sausage", recipeRefs: ["Summer Sausage"] }
+                ];
+                currentCategory = "All Recipes";
                 currentRecipe = 0;
                 currentVersion = 0;
                 saveRecipes();
+                saveCategories();
+                renderCategorySelect();
                 renderRecipeTabs();
                 renderVersionTabs();
                 renderIngredients();
@@ -1259,6 +1496,10 @@
 
         function saveRecipes() {
             localStorage.setItem('sausageRecipes', JSON.stringify(recipes));
+        }
+
+        function saveCategories() {
+            localStorage.setItem('sausageCategories', JSON.stringify(categories));
         }
     </script>
 </body>
