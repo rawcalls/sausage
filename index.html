@@ -56,6 +56,16 @@
         .ingredient input {
             margin-right: 10px;
         }
+        .ingredient span[contenteditable="true"] {
+            border: 1px dashed #ccc;
+            padding: 5px;
+            margin-right: 10px;
+            background-color: #f5f5f5;
+            flex: 1;
+        }
+        .ingredient span[contenteditable="true"]:hover {
+            background-color: #e8e8e8;
+        }
         .delete-ingredient {
             padding: 5px 10px;
             background-color: #ff4444;
@@ -641,13 +651,54 @@
                     `;
                 }
                 div.innerHTML = `
-                    <label>${ingredient.name}:</label>
+                    <span contenteditable="true" data-key="${key}">${ingredient.name}</span>
                     ${ratioInput}
                     <label>(%):</label>
                     <input type="number" id="${key}" value="${ingredient.percentage}" step="0.01" onchange="updateIngredients()">
                     <button class="delete-ingredient" onclick="deleteIngredient('${key}')">Delete</button>
                 `;
                 ingredientList.appendChild(div);
+
+                const nameSpan = div.querySelector('span[contenteditable="true"]');
+                nameSpan.addEventListener('input', function() {
+                    const oldKey = this.dataset.key;
+                    let newName = this.textContent.trim();
+                    if (newName === '') {
+                        alert("Ingredient name cannot be empty.");
+                        this.textContent = ingredient.name;
+                        return;
+                    }
+
+                    // Check for duplicates
+                    const allNames = Object.values(ingredients).map(ing => ing.name);
+                    const otherNames = allNames.filter((_, idx) => sortedEntries[idx][0] !== oldKey);
+                    if (otherNames.includes(newName)) {
+                        alert("An ingredient with this name already exists.");
+                        this.textContent = ingredient.name;
+                        return;
+                    }
+
+                    // Update the ingredient name and key
+                    const newKey = newName.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const updatedIngredient = { ...ingredients[oldKey], name: newName };
+                    delete ingredients[oldKey];
+                    ingredients[newKey] = updatedIngredient;
+
+                    // Update the DOM elements
+                    this.dataset.key = newKey;
+                    const percentageInput = div.querySelector(`input[type="number"]`);
+                    percentageInput.id = newKey;
+                    const ratioInput = div.querySelector(`input[id="ratio_${oldKey}"]`);
+                    if (ratioInput) {
+                        ratioInput.id = `ratio_${newKey}`;
+                        ratioInput.setAttribute('onchange', `updateLeanFatRatio('${newKey}', this.value)`);
+                    }
+                    const deleteButton = div.querySelector('button.delete-ingredient');
+                    deleteButton.setAttribute('onclick', `deleteIngredient('${newKey}')`);
+
+                    saveRecipes();
+                    updateIngredients();
+                });
             });
 
             const deleteButtons = document.querySelectorAll('.delete-ingredient');
