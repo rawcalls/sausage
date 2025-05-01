@@ -872,7 +872,7 @@
                 percentageInput.addEventListener('input', debouncedUpdateIngredients);
 
                 const nameSpan = div.querySelector('span[contenteditable="true"]');
-                nameSpan.addEventListener('input', function() {
+                nameSpan.addEventListener('blur', function() {
                     const oldKey = this.dataset.key;
                     let newName = this.textContent.trim();
                     if (newName === '') {
@@ -927,8 +927,8 @@
             }
             const leanRatio = parseFloat(match[1]);
             const fatRatio = parseFloat(match[2]);
-            if (isNaN(leanRatio) || isNaN(fatRatio) || leanRatio + fatRatio !== 100) {
-                alert("Lean and fat ratios must be numbers and add up to 100 (e.g., '70/30').");
+            if (isNaN(leanRatio) || isNaN(fatRatio) || leanRatio < 0 || fatRatio < 0 || leanRatio + fatRatio !== 100) {
+                alert("Lean and fat ratios must be non-negative numbers and add up to 100 (e.g., '100/0' or '70/30').");
                 renderIngredients(); // Re-render to reset the input to the previous valid value
                 return;
             }
