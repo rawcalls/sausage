@@ -161,13 +161,27 @@
         .recipe-tab:hover {
             background-color: #1976D2;
         }
+        .recipe-tab span[contenteditable="true"] {
+            outline: none;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .recipe-tab span[contenteditable="true"]:hover {
+            background-color: #e8e8e8;
+        }
+        .recipe-tab span[contenteditable="true"]:focus {
+            background-color: #fff;
+            border: 1px solid #1976D2;
+        }
         .version-tab {
             background-color: #4CAF50;
             padding: 6px 12px;
             font-size: 13px;
         }
         .version-tab.active {
-            background-color: #45a049;
+            background-color: #2e7d32;
+            font-size: 15px;
+            border-bottom: 4px solid #1b5e20;
         }
         .version-tab:hover {
             background-color: #45a049;
@@ -843,7 +857,6 @@
 
             const sortedEntries = [...meats, ...nonMeats];
 
-            // Create a debounced version of updateIngredients with a 3-second delay
             const debouncedUpdateIngredients = debounce(updateIngredients, 3000);
 
             sortedEntries.forEach(([key, ingredient]) => {
@@ -851,7 +864,6 @@
                 div.className = 'ingredient';
                 let ratioInput = '';
                 if (ingredient.isMeat) {
-                    // Use the ingredient's leanRatio and fatRatio directly, without defaults
                     const leanRatio = ingredient.leanRatio !== undefined ? ingredient.leanRatio : 80;
                     const fatRatio = ingredient.fatRatio !== undefined ? ingredient.fatRatio : 20;
                     ratioInput = `
@@ -868,7 +880,6 @@
                 `;
                 ingredientList.appendChild(div);
 
-                // Attach debounced updateIngredients to the percentage input
                 const percentageInput = div.querySelector(`input[id="${key}"]`);
                 percentageInput.addEventListener('input', debouncedUpdateIngredients);
 
@@ -924,35 +935,29 @@
             const ingredient = ingredients[key];
             const ratioInput = document.getElementById(`ratio_${key}`);
             
-            // Store the current valid ratio in case we need to revert
             const previousValue = `${ingredient.leanRatio}/${ingredient.fatRatio}`;
 
-            // Validate the input format
             const match = value.match(/^(\d+)\/(\d+)$/);
             if (!match) {
                 alert("Please enter the lean/fat ratio in the format 'lean/fat' (e.g., '70/30').");
-                ratioInput.value = previousValue; // Revert to the last valid value
+                ratioInput.value = previousValue;
                 return;
             }
 
             const leanRatio = parseFloat(match[1]);
             const fatRatio = parseFloat(match[2]);
             
-            // Validate that the numbers are non-negative and sum to 100
             if (isNaN(leanRatio) || isNaN(fatRatio) || leanRatio < 0 || fatRatio < 0 || (leanRatio + fatRatio) !== 100) {
                 alert("Lean and fat ratios must be non-negative numbers and add up to 100 (e.g., '100/0' or '70/30').");
-                ratioInput.value = previousValue; // Revert to the last valid value
+                ratioInput.value = previousValue;
                 return;
             }
 
-            // Update the ingredient's lean/fat ratio in the recipes object
             if (ingredients[key]) {
                 ingredients[key].leanRatio = leanRatio;
                 ingredients[key].fatRatio = fatRatio;
                 saveRecipes();
-                // Ensure the input field reflects the new value
                 ratioInput.value = `${leanRatio}/${fatRatio}`;
-                // Recalculate everything, including overall fat percentage
                 updateIngredients();
             }
         }
@@ -1211,25 +1216,42 @@
 
                 const tab = document.createElement('button');
                 tab.className = 'recipe-tab' + (globalIndex === currentRecipe ? ' active' : '');
-                tab.textContent = recipe.name;
-                
+                tab.innerHTML = `<span contenteditable="true" data-index="${globalIndex}">${recipe.name}</span>`;
                 tab.onclick = (e) => {
-                    if (e.shiftKey) {
-                        renameRecipe(globalIndex);
-                    } else {
+                    if (e.target.tagName !== 'SPAN') {
                         switchRecipe(globalIndex);
                     }
                 };
 
-                let pressTimer;
-                tab.addEventListener('touchstart', (e) => {
-                    pressTimer = setTimeout(() => {
-                        e.preventDefault();
-                        renameRecipe(globalIndex);
-                    }, 1000);
+                const nameSpan = tab.querySelector('span');
+                nameSpan.addEventListener('blur', function() {
+                    const index = parseInt(this.dataset.index);
+                    const oldName = recipes[index].name;
+                    let newName = this.textContent.trim();
+                    if (newName === '') {
+                        alert("Recipe name cannot be empty.");
+                        this.textContent = oldName;
+                        return;
+                    }
+                    if (recipes.some(recipe => recipe.name === newName && recipe.name !== oldName)) {
+                        alert("A recipe with this name already exists.");
+                        this.textContent = oldName;
+                        return;
+                    }
+                    recipes[index].name = newName;
+                    categories.forEach(cat => {
+                        const refIndex = cat.recipeRefs.indexOf(oldName);
+                        if (refIndex !== -1) {
+                            cat.recipeRefs[refIndex] = newName;
+                            cat.recipeRefs.sort();
+                        }
+                    });
+                    saveRecipes();
+                    saveCategories();
+                    renderCategorySelect();
+                    renderRecipeTabs();
+                    updatePageTitle();
                 });
-                tab.addEventListener('touchend', () => clearTimeout(pressTimer));
-                tab.addEventListener('touchcancel', () => clearTimeout(pressTimer));
 
                 tabGroup.appendChild(tab);
 
@@ -1314,31 +1336,6 @@
             clearButton.textContent = 'Clear All Versions';
             clearButton.onclick = clearVersions;
             tabsContainer.appendChild(clearButton);
-        }
-
-        function renameRecipe(index) {
-            const oldName = recipes[index].name;
-            const newName = prompt("Enter a new name for this recipe:", oldName);
-            if (newName && newName.trim() !== "") {
-                const trimmedName = newName.trim();
-                if (recipes.some(recipe => recipe.name === trimmedName && recipe.name !== oldName)) {
-                    alert("A recipe with this name already exists.");
-                    return;
-                }
-                recipes[index].name = trimmedName;
-                categories.forEach(cat => {
-                    const refIndex = cat.recipeRefs.indexOf(oldName);
-                    if (refIndex !== -1) {
-                        cat.recipeRefs[refIndex] = trimmedName;
-                        cat.recipeRefs.sort();
-                    }
-                });
-                saveRecipes();
-                saveCategories();
-                renderCategorySelect();
-                renderRecipeTabs();
-                updatePageTitle();
-            }
         }
 
         function renameVersion(index) {
@@ -1457,7 +1454,6 @@
                     return;
                 }
 
-                // Collect the latest ingredient data from the DOM
                 const ingredients = {};
                 const ingredientList = document.getElementById('ingredientList').children;
                 for (let div of ingredientList) {
@@ -1466,7 +1462,6 @@
                     const percentage = parseFloat(input.value);
                     const existing = recipes[currentRecipe].versions[currentVersion].ingredients[key];
 
-                    // Get the latest lean/fat ratio from the DOM if the ingredient is a meat
                     let leanRatio = existing.leanRatio;
                     let fatRatio = existing.fatRatio;
                     const ratioInput = div.querySelector(`input[id="ratio_${key}"]`);
@@ -1475,7 +1470,6 @@
                         if (match) {
                             leanRatio = parseFloat(match[1]);
                             fatRatio = parseFloat(match[2]);
-                            // Update the ingredient's lean/fat ratio in the recipes object
                             existing.leanRatio = leanRatio;
                             existing.fatRatio = fatRatio;
                         }
@@ -1491,14 +1485,12 @@
                 }
                 console.log("Ingredients collected:", ingredients);
 
-                // Validate percentages
                 Object.values(ingredients).forEach(ingredient => {
                     if (isNaN(ingredient.percentage) || ingredient.percentage === undefined) {
                         throw new Error(`Invalid percentage for ${ingredient.name}`);
                     }
                 });
 
-                // Validate meat total
                 const meatTotal = Object.values(ingredients)
                     .filter(ing => ing.isMeat)
                     .reduce((sum, ing) => sum + ing.percentage, 0);
@@ -1509,22 +1501,18 @@
                     return;
                 }
 
-                // Update the recipes object with the new ingredient data
                 recipes[currentRecipe].versions[currentVersion].ingredients = ingredients;
                 recipes[currentRecipe].versions[currentVersion].batchSize = batchSize;
                 console.log("Updated recipes:", recipes);
 
-                // Re-render ingredients to ensure DOM is in sync
                 renderIngredients();
 
-                // Calculate and update the overall fat percentage
                 const fatPercentage = calculateOverallFatPercentage(ingredients);
                 const overallFatElement = document.getElementById('overallFatPercentage');
                 if (overallFatElement) {
                     overallFatElement.textContent = `${fatPercentage}%`;
                 }
 
-                // Update the ingredient table
                 const tbody = document.getElementById('ingredientBody');
                 if (!tbody) throw new Error("Ingredient table body not found");
                 tbody.innerHTML = '';
