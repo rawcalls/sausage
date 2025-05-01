@@ -906,20 +906,25 @@
             const match = value.match(/^(\d+)\/(\d+)$/);
             if (!match) {
                 alert("Please enter the lean/fat ratio in the format 'lean/fat' (e.g., '70/30').");
-                renderIngredients();
+                renderIngredients(); // Re-render to reset the input to the previous valid value
                 return;
             }
             const leanRatio = parseFloat(match[1]);
             const fatRatio = parseFloat(match[2]);
             if (isNaN(leanRatio) || isNaN(fatRatio) || leanRatio + fatRatio !== 100) {
                 alert("Lean and fat ratios must be numbers and add up to 100 (e.g., '70/30').");
-                renderIngredients();
+                renderIngredients(); // Re-render to reset the input to the previous valid value
                 return;
             }
-            recipes[currentRecipe].versions[currentVersion].ingredients[key].leanRatio = leanRatio;
-            recipes[currentRecipe].versions[currentVersion].ingredients[key].fatRatio = fatRatio;
-            saveRecipes();
-            updateIngredients();
+
+            // Update the ingredient's lean/fat ratio in the recipes object
+            const ingredients = recipes[currentRecipe].versions[currentVersion].ingredients;
+            if (ingredients[key]) {
+                ingredients[key].leanRatio = leanRatio;
+                ingredients[key].fatRatio = fatRatio;
+                saveRecipes();
+                updateIngredients(); // Recalculate everything, including overall fat percentage
+            }
         }
 
         function showMeatPrompt() {
@@ -1422,6 +1427,7 @@
                     return;
                 }
 
+                // Collect the latest ingredient data from the DOM
                 const ingredients = {};
                 const ingredientList = document.getElementById('ingredientList').children;
                 for (let div of ingredientList) {
@@ -1429,22 +1435,40 @@
                     const key = input.id;
                     const percentage = parseFloat(input.value);
                     const existing = recipes[currentRecipe].versions[currentVersion].ingredients[key];
+
+                    // Get the latest lean/fat ratio from the DOM if the ingredient is a meat
+                    let leanRatio = existing.leanRatio;
+                    let fatRatio = existing.fatRatio;
+                    const ratioInput = div.querySelector(`input[id="ratio_${key}"]`);
+                    if (ratioInput) {
+                        const match = ratioInput.value.match(/^(\d+)\/(\d+)$/);
+                        if (match) {
+                            leanRatio = parseFloat(match[1]);
+                            fatRatio = parseFloat(match[2]);
+                            // Update the ingredient's lean/fat ratio in the recipes object
+                            existing.leanRatio = leanRatio;
+                            existing.fatRatio = fatRatio;
+                        }
+                    }
+
                     ingredients[key] = {
                         name: existing.name,
                         percentage: percentage,
                         isMeat: existing.isMeat,
-                        leanRatio: existing.leanRatio,
-                        fatRatio: existing.fatRatio
+                        leanRatio: leanRatio,
+                        fatRatio: fatRatio
                     };
                 }
                 console.log("Ingredients collected:", ingredients);
 
+                // Validate percentages
                 Object.values(ingredients).forEach(ingredient => {
                     if (isNaN(ingredient.percentage) || ingredient.percentage === undefined) {
                         throw new Error(`Invalid percentage for ${ingredient.name}`);
                     }
                 });
 
+                // Validate meat total
                 const meatTotal = Object.values(ingredients)
                     .filter(ing => ing.isMeat)
                     .reduce((sum, ing) => sum + ing.percentage, 0);
@@ -1455,6 +1479,7 @@
                     return;
                 }
 
+                // Update the recipes object with the new ingredient data
                 recipes[currentRecipe].versions[currentVersion] = {
                     name: recipes[currentRecipe].versions[currentVersion].name,
                     batchSize: batchSize,
@@ -1464,12 +1489,14 @@
                 };
                 console.log("Updated recipes:", recipes);
 
+                // Calculate and update the overall fat percentage
                 const fatPercentage = calculateOverallFatPercentage(ingredients);
                 const overallFatElement = document.getElementById('overallFatPercentage');
                 if (overallFatElement) {
                     overallFatElement.textContent = `${fatPercentage}%`;
                 }
 
+                // Update the ingredient table
                 const tbody = document.getElementById('ingredientBody');
                 if (!tbody) throw new Error("Ingredient table body not found");
                 tbody.innerHTML = '';
