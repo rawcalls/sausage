@@ -451,7 +451,7 @@
     </style>
 </head>
 <body>
-    <h1 id="pageTitle">Grandpa's Summer Sausage/Version 1 Calculator</h1>
+    <h1 id="pageTitle">Grandpa's Summer Sausage Calculator</h1>
 
     <div class="category-section" id="categorySection">
         <label for="categorySelect">Category:</label>
@@ -851,8 +851,9 @@
                 div.className = 'ingredient';
                 let ratioInput = '';
                 if (ingredient.isMeat) {
-                    const leanRatio = ingredient.leanRatio || 80;
-                    const fatRatio = ingredient.fatRatio || 20;
+                    // Use the ingredient's leanRatio and fatRatio directly, without defaults
+                    const leanRatio = ingredient.leanRatio !== undefined ? ingredient.leanRatio : 80;
+                    const fatRatio = ingredient.fatRatio !== undefined ? ingredient.fatRatio : 20;
                     ratioInput = `
                         <label>Lean/Fat Ratio:</label>
                         <input type="text" id="ratio_${key}" value="${leanRatio}/${fatRatio}" style="width: 60px;" onchange="updateLeanFatRatio('${key}', this.value)">
@@ -919,27 +920,40 @@
         }
 
         function updateLeanFatRatio(key, value) {
+            const ingredients = recipes[currentRecipe].versions[currentVersion].ingredients;
+            const ingredient = ingredients[key];
+            const ratioInput = document.getElementById(`ratio_${key}`);
+            
+            // Store the current valid ratio in case we need to revert
+            const previousValue = `${ingredient.leanRatio}/${ingredient.fatRatio}`;
+
+            // Validate the input format
             const match = value.match(/^(\d+)\/(\d+)$/);
             if (!match) {
                 alert("Please enter the lean/fat ratio in the format 'lean/fat' (e.g., '70/30').");
-                renderIngredients(); // Re-render to reset the input to the previous valid value
+                ratioInput.value = previousValue; // Revert to the last valid value
                 return;
             }
+
             const leanRatio = parseFloat(match[1]);
             const fatRatio = parseFloat(match[2]);
-            if (isNaN(leanRatio) || isNaN(fatRatio) || leanRatio < 0 || fatRatio < 0 || leanRatio + fatRatio !== 100) {
+            
+            // Validate that the numbers are non-negative and sum to 100
+            if (isNaN(leanRatio) || isNaN(fatRatio) || leanRatio < 0 || fatRatio < 0 || (leanRatio + fatRatio) !== 100) {
                 alert("Lean and fat ratios must be non-negative numbers and add up to 100 (e.g., '100/0' or '70/30').");
-                renderIngredients(); // Re-render to reset the input to the previous valid value
+                ratioInput.value = previousValue; // Revert to the last valid value
                 return;
             }
 
             // Update the ingredient's lean/fat ratio in the recipes object
-            const ingredients = recipes[currentRecipe].versions[currentVersion].ingredients;
             if (ingredients[key]) {
                 ingredients[key].leanRatio = leanRatio;
                 ingredients[key].fatRatio = fatRatio;
                 saveRecipes();
-                updateIngredients(); // Recalculate everything, including overall fat percentage
+                // Ensure the input field reflects the new value
+                ratioInput.value = `${leanRatio}/${fatRatio}`;
+                // Recalculate everything, including overall fat percentage
+                updateIngredients();
             }
         }
 
@@ -1371,8 +1385,8 @@
                 }
                 const ratioInput = document.getElementById(`ratio_${key}`);
                 if (ratioInput) {
-                    const leanRatio = version.ingredients[key].leanRatio || 80;
-                    const fatRatio = version.ingredients[key].fatRatio || 20;
+                    const leanRatio = version.ingredients[key].leanRatio !== undefined ? version.ingredients[key].leanRatio : 80;
+                    const fatRatio = version.ingredients[key].fatRatio !== undefined ? version.ingredients[key].fatRatio : 20;
                     ratioInput.value = `${leanRatio}/${fatRatio}`;
                 }
             });
@@ -1382,7 +1396,7 @@
             let totalFatPercentage = 0;
             const meats = Object.values(ingredients).filter(ing => ing.isMeat);
             meats.forEach(meat => {
-                if (meat.fatRatio) {
+                if (meat.fatRatio !== undefined) {
                     const meatPercentage = meat.percentage / 100;
                     totalFatPercentage += meatPercentage * meat.fatRatio;
                 }
