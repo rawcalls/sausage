@@ -122,10 +122,53 @@
             margin-bottom: 10px;
             color: #333;
         }
-        .recipe-tabs, .version-tabs, .category-section {
+        .category-tabs, .recipe-tabs, .version-tabs {
             display: flex;
             padding: 5px 0;
             align-items: center;
+        }
+        .category-tabs {
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            border-bottom: 3px solid #666;
+        }
+        .category-tab {
+            position: relative;
+            padding: 8px 16px;
+            margin-right: 5px;
+            background-color: #e0e0e0;
+            color: #333;
+            border: 1px solid #bbb;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+            transform: perspective(500px) rotateX(20deg);
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+        }
+        .category-tab.active {
+            background-color: #d1c4e9;
+            color: #4a148c;
+            transform: perspective(500px) rotateX(0deg);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .category-tab:hover {
+            background-color: #d5d5d5;
+            transform: perspective(500px) rotateX(10deg);
+        }
+        .category-tab.add {
+            background-color: #666;
+            color: white;
+        }
+        .category-tab.add:hover {
+            background-color: #555;
+        }
+        .category-buttons {
+            display: flex;
+            align-items: center;
+            margin-left: 10px;
         }
         .recipe-tabs {
             flex-direction: column;
@@ -137,33 +180,54 @@
             display: flex;
             align-items: center;
             margin-bottom: 10px;
+            width: 100%;
+        }
+        .recipe-tab {
+            position: relative;
+            padding: 8px 16px;
+            background-color: #bbdefb;
+            color: #0d47a1;
+            border: 1px solid #90caf9;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+            transform: perspective(500px) rotateX(20deg);
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+            width: 200px;
+            text-align: center;
+        }
+        .recipe-tab.active {
+            background-color: #90caf9;
+            transform: perspective(500px) rotateX(0deg);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .recipe-tab:hover {
+            background-color: #a3d5ff;
+            transform: perspective(500px) rotateX(10deg);
+        }
+        .recipe-tab.add {
+            background-color: #666;
+            color: white;
+        }
+        .recipe-tab.add:hover {
+            background-color: #555;
         }
         .version-tabs {
             flex-wrap: wrap;
             margin-left: 20px;
             border-bottom: 3px solid #666;
         }
-        .recipe-tab, .version-tab {
-            padding: 8px 16px;
+        .version-tab {
+            padding: 6px 12px;
             margin-right: 5px;
+            background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 5px 5px 0 0;
             cursor: pointer;
-            font-size: 14px;
-        }
-        .recipe-tab {
-            background-color: #2196F3;
-        }
-        .recipe-tab.active {
-            background-color: #1976D2;
-        }
-        .recipe-tab:hover {
-            background-color: #1976D2;
-        }
-        .version-tab {
-            background-color: #4CAF50;
-            padding: 6px 12px;
             font-size: 13px;
         }
         .version-tab.active {
@@ -174,13 +238,13 @@
         .version-tab:hover {
             background-color: #45a049;
         }
-        .recipe-tab.add, .version-tab.add, .category-button.add {
+        .version-tab.add {
             background-color: #666;
         }
-        .recipe-tab.add:hover, .version-tab.add:hover, .category-button.add:hover {
+        .version-tab.add:hover {
             background-color: #555;
         }
-        .delete-tab, .category-button.edit, .category-button.delete, .assign-button, .edit-tab {
+        .delete-tab, .category-button, .assign-button, .edit-tab {
             margin-left: 5px;
             padding: 8px 12px;
             border: none;
@@ -420,7 +484,7 @@
             h1, #ingredientTable, .directions {
                 display: block;
             }
-            .category-section, .tabs-container, .input-section, #ingredients, .button-section, .modal {
+            .category-tabs, .tabs-container, .input-section, #ingredients, .button-section, .modal {
                 display: none;
             }
             .directions .reset-button, .edit-step, .delete-step {
@@ -462,13 +526,8 @@
 <body>
     <h1 id="pageTitle">Grandpa's Summer Sausage Calculator</h1>
 
-    <div class="category-section" id="categorySection">
-        <label for="categorySelect">Category:</label>
-        <select id="categorySelect" onchange="switchCategory(this.value)">
-        </select>
-        <button class="category-button add" onclick="addCategory()">Add</button>
-        <button class="category-button edit" onclick="editCategory()">Edit</button>
-        <button class="category-button delete" onclick="deleteCategory()">Delete</button>
+    <div class="tabs-header">Categories</div>
+    <div class="category-tabs" id="categoryTabs">
     </div>
 
     <div class="tabs-container">
@@ -638,7 +697,6 @@
             distilledWater: { name: "Distilled Water", percentage: 10 }
         };
 
-        // Debounce utility to prevent rapid updates from causing issues
         function debounce(func, wait) {
             let timeout;
             return function(...args) {
@@ -655,7 +713,6 @@
                 if (savedRecipes) {
                     console.log("Loading saved recipes from localStorage");
                     recipes = JSON.parse(savedRecipes);
-                    // Validate instructions for each version of each recipe
                     recipes.forEach(recipe => {
                         recipe.versions.forEach(version => {
                             if (!Array.isArray(version.instructions) || version.instructions.length === 0 || version.instructions.some(step => !step.title)) {
@@ -692,7 +749,7 @@
                 currentVersion = 0;
                 console.log("Current category:", currentCategory, "Current recipe:", currentRecipe, "Current version:", currentVersion);
 
-                renderCategorySelect();
+                renderCategoryTabs();
                 renderRecipeTabs();
                 renderVersionTabs();
                 loadVersion(currentVersion);
@@ -1028,9 +1085,9 @@
             updateIngredients();
         }
 
-        function renderCategorySelect() {
-            const select = document.getElementById('categorySelect');
-            select.innerHTML = '';
+        function renderCategoryTabs() {
+            const tabsContainer = document.getElementById('categoryTabs');
+            tabsContainer.innerHTML = '';
 
             const sortedCategories = [...categories].sort((a, b) => {
                 if (a.name === "All Recipes") return -1;
@@ -1039,14 +1096,35 @@
             });
 
             sortedCategories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.name;
-                option.textContent = category.name;
-                if (category.name === currentCategory) {
-                    option.selected = true;
-                }
-                select.appendChild(option);
+                const tab = document.createElement('button');
+                tab.className = 'category-tab' + (category.name === currentCategory ? ' active' : '');
+                tab.textContent = category.name;
+                tab.onclick = () => switchCategory(category.name);
+                tabsContainer.appendChild(tab);
             });
+
+            const tab = document.createElement('button');
+            tab.className = 'category-tab add';
+            tab.textContent = '+';
+            tab.onclick = addCategory;
+            tabsContainer.appendChild(tab);
+
+            const buttonsDiv = document.createElement('div');
+            buttonsDiv.className = 'category-buttons';
+
+            const editButton = document.createElement('button');
+            editButton.className = 'category-button edit';
+            editButton.textContent = 'Edit';
+            editButton.onclick = editCategory;
+            buttonsDiv.appendChild(editButton);
+
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'category-button delete';
+            deleteButton.textContent = 'Delete';
+            deleteButton.onclick = deleteCategory;
+            buttonsDiv.appendChild(deleteButton);
+
+            tabsContainer.appendChild(buttonsDiv);
 
             const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
             if (allRecipesCategory) {
@@ -1067,7 +1145,7 @@
 
             categories.push({ name: cleanName, recipeRefs: [] });
             saveCategories();
-            renderCategorySelect();
+            renderCategoryTabs();
         }
 
         function editCategory() {
@@ -1090,7 +1168,7 @@
                 category.name = cleanName;
                 currentCategory = cleanName;
                 saveCategories();
-                renderCategorySelect();
+                renderCategoryTabs();
             }
         }
 
@@ -1104,7 +1182,7 @@
                 categories = categories.filter(cat => cat.name !== currentCategory);
                 currentCategory = "All Recipes";
                 saveCategories();
-                renderCategorySelect();
+                renderCategoryTabs();
                 renderRecipeTabs();
                 renderVersionTabs();
                 loadVersion(currentVersion);
@@ -1128,6 +1206,7 @@
             currentRecipe = newRecipeIndex;
             currentVersion = 0;
 
+            renderCategoryTabs();
             renderRecipeTabs();
             renderVersionTabs();
             loadVersion(currentVersion);
@@ -1189,7 +1268,7 @@
 
             saveCategories();
             closeCategoryAssignModal();
-            renderCategorySelect();
+            renderCategoryTabs();
             renderRecipeTabs();
         }
 
@@ -1212,7 +1291,7 @@
                 });
                 saveRecipes();
                 saveCategories();
-                renderCategorySelect();
+                renderCategoryTabs();
                 renderRecipeTabs();
                 updatePageTitle();
             }
@@ -1659,7 +1738,7 @@
 
                     saveRecipes();
                     saveCategories();
-                    renderCategorySelect();
+                    renderCategoryTabs();
                     renderRecipeTabs();
                     renderVersionTabs();
                     renderIngredients();
@@ -1710,7 +1789,7 @@
 
             saveRecipes();
             saveCategories();
-            renderCategorySelect();
+            renderCategoryTabs();
             renderRecipeTabs();
             renderVersionTabs();
             renderIngredients();
@@ -1766,7 +1845,7 @@
 
             saveRecipes();
             saveCategories();
-            renderCategorySelect();
+            renderCategoryTabs();
             renderRecipeTabs();
             renderVersionTabs();
             renderIngredients();
@@ -1814,7 +1893,7 @@
                 currentVersion = 0;
                 saveRecipes();
                 saveCategories();
-                renderCategorySelect();
+                renderCategoryTabs();
                 renderRecipeTabs();
                 renderVersionTabs();
                 renderIngredients();
