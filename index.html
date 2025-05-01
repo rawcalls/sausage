@@ -637,6 +637,15 @@
                 if (savedRecipes) {
                     console.log("Loading saved recipes from localStorage");
                     recipes = JSON.parse(savedRecipes);
+                    // Validate instructions for each version of each recipe
+                    recipes.forEach(recipe => {
+                        recipe.versions.forEach(version => {
+                            if (!Array.isArray(version.instructions) || version.instructions.length === 0 || version.instructions.some(step => !step.title)) {
+                                console.log("Invalid instructions detected, resetting to default");
+                                version.instructions = JSON.parse(JSON.stringify(defaultInstructions));
+                            }
+                        });
+                    });
                 } else {
                     console.log("No saved recipes, initializing default recipe");
                     recipes.push({
@@ -786,7 +795,8 @@
         function editStep(index) {
             const version = recipes[currentRecipe].versions[currentVersion];
             const step = version.instructions[index];
-            const newTitle = prompt("Enter the new title for this step:", step.title);
+            const currentTitle = step.title || "Step " + (index + 1);
+            const newTitle = prompt("Enter the new title for this step:", currentTitle);
             if (newTitle && newTitle.trim() !== "") {
                 version.instructions[index].title = newTitle.trim();
                 saveRecipes();
@@ -855,7 +865,6 @@
                         return;
                     }
 
-                    // Check for duplicates
                     const allNames = Object.values(ingredients).map(ing => ing.name);
                     const otherNames = allNames.filter((_, idx) => sortedEntries[idx][0] !== oldKey);
                     if (otherNames.includes(newName)) {
@@ -864,13 +873,11 @@
                         return;
                     }
 
-                    // Update the ingredient name and key
                     const newKey = newName.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const updatedIngredient = { ...ingredients[oldKey], name: newName };
                     delete ingredients[oldKey];
                     ingredients[newKey] = updatedIngredient;
 
-                    // Update the DOM elements
                     this.dataset.key = newKey;
                     const percentageInput = div.querySelector(`input[type="number"]`);
                     percentageInput.id = newKey;
@@ -990,7 +997,6 @@
             const select = document.getElementById('categorySelect');
             select.innerHTML = '';
 
-            // Sort categories: "All Recipes" first, then alphabetically
             const sortedCategories = [...categories].sort((a, b) => {
                 if (a.name === "All Recipes") return -1;
                 if (b.name === "All Recipes") return 1;
@@ -1007,7 +1013,6 @@
                 select.appendChild(option);
             });
 
-            // Update "All Recipes" category
             const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
             if (allRecipesCategory) {
                 allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
@@ -1080,7 +1085,6 @@
             const category = categories.find(cat => cat.name === currentCategory);
             const recipeNames = category ? category.recipeRefs : [];
             
-            // Find the first recipe in the category
             let newRecipeIndex = recipes.findIndex(recipe => recipeNames.includes(recipe.name));
             if (newRecipeIndex === -1) {
                 newRecipeIndex = 0;
@@ -1143,7 +1147,6 @@
                 }
             });
 
-            // Update "All Recipes" category
             const allRecipesCategory = categories.find(cat => cat.name === "All Recipes");
             if (allRecipesCategory) {
                 allRecipesCategory.recipeRefs = recipes.map(recipe => recipe.name).sort();
@@ -1162,7 +1165,6 @@
             const category = categories.find(cat => cat.name === currentCategory);
             const recipeNames = category ? category.recipeRefs : [];
 
-            // Filter and sort recipes based on the current category
             const filteredRecipes = recipes
                 .filter(recipe => recipeNames.includes(recipe.name))
                 .sort((a, b) => a.name.localeCompare(b.name));
@@ -1289,7 +1291,6 @@
                     return;
                 }
                 recipes[index].name = trimmedName;
-                // Update categories
                 categories.forEach(cat => {
                     const refIndex = cat.recipeRefs.indexOf(oldName);
                     if (refIndex !== -1) {
@@ -1588,7 +1589,6 @@
                 try {
                     const importedRecipe = JSON.parse(e.target.result);
                     
-                    // Validate the imported recipe structure
                     if (!importedRecipe.name || !Array.isArray(importedRecipe.versions) || importedRecipe.versions.length === 0) {
                         throw new Error("Invalid recipe format: Missing name or versions.");
                     }
@@ -1599,7 +1599,6 @@
                         }
                     });
 
-                    // Check for duplicate recipe names and append a suffix if necessary
                     let newRecipeName = importedRecipe.name;
                     let suffix = 1;
                     while (recipes.some(recipe => recipe.name === newRecipeName)) {
@@ -1608,11 +1607,9 @@
                     }
                     importedRecipe.name = newRecipeName;
 
-                    // Add the imported recipe to the list
                     recipes.push(importedRecipe);
                     recipes.sort((a, b) => a.name.localeCompare(b.name));
 
-                    // Update categories
                     const category = categories.find(cat => cat.name === currentCategory);
                     if (category && category.name !== "All Recipes") {
                         category.recipeRefs.push(newRecipeName);
@@ -1647,7 +1644,6 @@
             };
             reader.readAsText(file);
 
-            // Reset the input field
             input.value = '';
         }
 
@@ -1717,7 +1713,6 @@
             recipes.splice(index, 1);
             recipes.sort((a, b) => a.name.localeCompare(b.name));
 
-            // Update categories
             categories.forEach(cat => {
                 cat.recipeRefs = cat.recipeRefs.filter(name => name !== recipeName);
             });
