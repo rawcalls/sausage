@@ -843,8 +843,8 @@
 
             const sortedEntries = [...meats, ...nonMeats];
 
-            // Create a debounced version of updateIngredients
-            const debouncedUpdateIngredients = debounce(updateIngredients, 300);
+            // Create a debounced version of updateIngredients with a 3-second delay
+            const debouncedUpdateIngredients = debounce(updateIngredients, 3000);
 
             sortedEntries.forEach(([key, ingredient]) => {
                 const div = document.createElement('div');
