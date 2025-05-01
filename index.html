@@ -161,18 +161,6 @@
         .recipe-tab:hover {
             background-color: #1976D2;
         }
-        .recipe-tab span[contenteditable="true"] {
-            outline: none;
-            padding: 2px 4px;
-            border-radius: 3px;
-        }
-        .recipe-tab span[contenteditable="true"]:hover {
-            background-color: #e8e8e8;
-        }
-        .recipe-tab span[contenteditable="true"]:focus {
-            background-color: #fff;
-            border: 1px solid #1976D2;
-        }
         .version-tab {
             background-color: #4CAF50;
             padding: 6px 12px;
@@ -192,7 +180,7 @@
         .recipe-tab.add:hover, .version-tab.add:hover, .category-button.add:hover {
             background-color: #555;
         }
-        .delete-tab, .category-button.edit, .category-button.delete, .assign-button {
+        .delete-tab, .category-button.edit, .category-button.delete, .assign-button, .edit-tab {
             margin-left: 5px;
             padding: 8px 12px;
             border: none;
@@ -210,6 +198,13 @@
         }
         .delete-tab:hover {
             background-color: #cc0000;
+        }
+        .edit-tab {
+            background-color: #2196F3;
+            color: white;
+        }
+        .edit-tab:hover {
+            background-color: #1976D2;
         }
         .category-button.edit, .assign-button {
             background-color: #9c27b0;
@@ -1198,6 +1193,31 @@
             renderRecipeTabs();
         }
 
+        function editRecipe(index) {
+            const oldName = recipes[index].name;
+            const newName = prompt("Enter the new name for this recipe:", oldName);
+            if (newName && newName.trim() !== "") {
+                const trimmedName = newName.trim();
+                if (recipes.some(recipe => recipe.name === trimmedName && recipe.name !== oldName)) {
+                    alert("A recipe with this name already exists.");
+                    return;
+                }
+                recipes[index].name = trimmedName;
+                categories.forEach(cat => {
+                    const refIndex = cat.recipeRefs.indexOf(oldName);
+                    if (refIndex !== -1) {
+                        cat.recipeRefs[refIndex] = trimmedName;
+                        cat.recipeRefs.sort();
+                    }
+                });
+                saveRecipes();
+                saveCategories();
+                renderCategorySelect();
+                renderRecipeTabs();
+                updatePageTitle();
+            }
+        }
+
         function renderRecipeTabs() {
             const tabsContainer = document.getElementById('recipeTabs');
             tabsContainer.innerHTML = '';
@@ -1216,43 +1236,8 @@
 
                 const tab = document.createElement('button');
                 tab.className = 'recipe-tab' + (globalIndex === currentRecipe ? ' active' : '');
-                tab.innerHTML = `<span contenteditable="true" data-index="${globalIndex}">${recipe.name}</span>`;
-                tab.onclick = (e) => {
-                    if (e.target.tagName !== 'SPAN') {
-                        switchRecipe(globalIndex);
-                    }
-                };
-
-                const nameSpan = tab.querySelector('span');
-                nameSpan.addEventListener('blur', function() {
-                    const index = parseInt(this.dataset.index);
-                    const oldName = recipes[index].name;
-                    let newName = this.textContent.trim();
-                    if (newName === '') {
-                        alert("Recipe name cannot be empty.");
-                        this.textContent = oldName;
-                        return;
-                    }
-                    if (recipes.some(recipe => recipe.name === newName && recipe.name !== oldName)) {
-                        alert("A recipe with this name already exists.");
-                        this.textContent = oldName;
-                        return;
-                    }
-                    recipes[index].name = newName;
-                    categories.forEach(cat => {
-                        const refIndex = cat.recipeRefs.indexOf(oldName);
-                        if (refIndex !== -1) {
-                            cat.recipeRefs[refIndex] = newName;
-                            cat.recipeRefs.sort();
-                        }
-                    });
-                    saveRecipes();
-                    saveCategories();
-                    renderCategorySelect();
-                    renderRecipeTabs();
-                    updatePageTitle();
-                });
-
+                tab.textContent = recipe.name;
+                tab.onclick = () => switchRecipe(globalIndex);
                 tabGroup.appendChild(tab);
 
                 const assignButton = document.createElement('button');
@@ -1260,6 +1245,12 @@
                 assignButton.textContent = 'Assign to Categories';
                 assignButton.onclick = () => showCategoryAssignModal(globalIndex);
                 tabGroup.appendChild(assignButton);
+
+                const editButton = document.createElement('button');
+                editButton.className = 'edit-tab';
+                editButton.textContent = 'Edit';
+                editButton.onclick = () => editRecipe(globalIndex);
+                tabGroup.appendChild(editButton);
 
                 const deleteButton = document.createElement('button');
                 deleteButton.className = 'delete-tab';
