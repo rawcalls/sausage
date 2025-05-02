@@ -429,6 +429,21 @@
         .delete-step:hover {
             background-color: #cc0000;
         }
+        .calculate-button {
+            padding: 12px 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            margin: 10px auto;
+            width: 200px;
+        }
+        .calculate-button:hover {
+            background-color: #45a049;
+        }
         #screenshotContainer {
             position: absolute;
             top: -9999px;
@@ -556,10 +571,10 @@
         <div id="ingredientList">
         </div>
         <button class="add-ingredient" onclick="addIngredient()">Add New Ingredient</button>
+        <button class="calculate-button" onclick="updateIngredients()">Calculate</button>
     </div>
 
     <div class="button-section" style="text-align: center; margin: 10px 0;">
-        <button onclick="updateIngredients()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">Calculate</button>
         <button onclick="exportToExcel()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">Export to Excel</button>
         <button class="export-button" onclick="exportRecipe()">Export Recipe</button>
         <label class="import-button">
@@ -761,6 +776,7 @@
                 updatePageTitle();
             } catch (error) {
                 console.error("Error in DOMContentLoaded:", error.message, error.stack);
+                alert("Failed to initialize the calculator. Please check the console for details.");
             }
         });
 
@@ -1088,6 +1104,7 @@
         }
 
         function renderCategoryTabs() {
+            console.log("Rendering category tabs with categories:", categories);
             const tabsContainer = document.getElementById('categoryTabs');
             tabsContainer.innerHTML = '';
 
@@ -1300,6 +1317,7 @@
         }
 
         function renderRecipeTabs() {
+            console.log("Rendering recipe tabs for category:", currentCategory, "with recipes:", recipes);
             const tabsContainer = document.getElementById('recipeTabs');
             tabsContainer.innerHTML = '';
 
@@ -1361,6 +1379,7 @@
         }
 
         function renderVersionTabs() {
+            console.log("Rendering version tabs for recipe:", recipes[currentRecipe].name, "with versions:", recipes[currentRecipe].versions);
             const tabsContainer = document.getElementById('versionTabs');
             tabsContainer.innerHTML = '';
 
@@ -1650,9 +1669,10 @@
             ];
             ws['!cols'] = colWidths;
 
-            data[0].forEach((_, colIndex) => {
+            // Style header row
+            data[0].forEach((header, colIndex) => {
                 const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIndex });
-                if (!ws[cellRef]) ws[cellRef] = { t: 's', v: data[0][colIndex] };
+                if (!ws[cellRef]) ws[cellRef] = { t: 's', v: header };
                 ws[cellRef].s = {
                     font: { bold: true },
                     alignment: { horizontal: "center" },
@@ -1665,6 +1685,7 @@
                 };
             });
 
+            // Style data rows
             for (let row = 1; row < data.length; row++) {
                 for (let col = 0; col < data[row].length; col++) {
                     const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
