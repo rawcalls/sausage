@@ -246,6 +246,25 @@
         .version-tab.add:hover {
             background-color: #555;
         }
+        .lock-button {
+            padding: 6px 10px;
+            margin-left: 5px;
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .lock-button.locked {
+            background-color: #f44336;
+        }
+        .lock-button.locked:hover {
+            background-color: #d32f2f;
+        }
+        .lock-button.unlocked:hover {
+            background-color: #e68900;
+        }
         .delete-tab, .category-button, .assign-button, .edit-tab {
             margin-left: 5px;
             padding: 8px 12px;
@@ -501,7 +520,7 @@
             h1, #ingredientTable, .directions {
                 display: block;
             }
-            .category-tabs, .tabs-container, .input-section, #ingredients, .button-section, .modal {
+            .category-tabs, .tabs-container, .inputglyph-section, #ingredients, .button-section, .modal {
                 display: none;
             }
             .directions .reset-button, .edit-step, .delete-step {
@@ -736,6 +755,9 @@
                                 console.log("Invalid instructions detected, resetting to default");
                                 version.instructions = JSON.parse(JSON.stringify(defaultInstructions));
                             }
+                            if (version.locked === undefined) {
+                                version.locked = false;
+                            }
                         });
                     });
                 } else {
@@ -747,7 +769,8 @@
                             batchSize: 5,
                             ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
                             instructions: JSON.parse(JSON.stringify(defaultInstructions)),
-                            notes: defaultNotes
+                            notes: defaultNotes,
+                            locked: false
                         }]
                     });
                 }
@@ -915,6 +938,7 @@
             ingredientList.innerHTML = '';
 
             const ingredients = recipes[currentRecipe].versions[currentVersion].ingredients;
+            const isLocked = recipes[currentRecipe].versions[currentVersion].locked;
             const ingredientEntries = Object.entries(ingredients);
 
             const meats = ingredientEntries
@@ -945,13 +969,15 @@
                     <span contenteditable="true" data-key="${key}">${ingredient.name}</span>
                     ${ratioInput}
                     <label>(%):</label>
-                    <input type="number" id="${key}" value="${ingredient.percentage}" step="0.01">
+                    <input type="number" id="${key}" value="${ingredient.percentage}" step="0.01" ${isLocked ? 'disabled' : ''}>
                     <button class="delete-ingredient" onclick="deleteIngredient('${key}')">Delete</button>
                 `;
                 ingredientList.appendChild(div);
 
                 const percentageInput = div.querySelector(`input[id="${key}"]`);
-                percentageInput.addEventListener('input', debouncedUpdateIngredients);
+                if (!isLocked) {
+                    percentageInput.addEventListener('input', debouncedUpdateIngredients);
+                }
 
                 const nameSpan = div.querySelector('span[contenteditable="true"]');
                 nameSpan.addEventListener('blur', function() {
@@ -993,11 +1019,14 @@
             });
 
             const deleteButtons = document.querySelectorAll('.delete-ingredient');
-            if (sortedEntries.length <= 1) {
+            if (sortedEntries.length <= 1 || isLocked) {
                 deleteButtons.forEach(btn => btn.disabled = true);
             } else {
                 deleteButtons.forEach(btn => btn.disabled = false);
             }
+
+            const batchSizeInput = document.getElementById('batchSize');
+            batchSizeInput.disabled = isLocked;
         }
 
         function updateLeanFatRatio(key, value) {
@@ -1060,6 +1089,10 @@
         }
 
         async function addIngredient() {
+            if (recipes[currentRecipe].versions[currentVersion].locked) {
+                alert("Cannot add ingredients while the version is locked.");
+                return;
+            }
             const name = prompt("Enter the name of the new ingredient:");
             if (!name || name.trim() === "") return;
 
@@ -1092,6 +1125,10 @@
         }
 
         function deleteIngredient(key) {
+            if (recipes[currentRecipe].versions[currentVersion].locked) {
+                alert("Cannot delete ingredients while the version is locked.");
+                return;
+            }
             const ingredients = recipes[currentRecipe].versions[currentVersion].ingredients;
             if (Object.keys(ingredients).length <= 1) {
                 alert("You must keep at least one ingredient.");
@@ -1378,6 +1415,14 @@
             tabsContainer.appendChild(tabGroup);
         }
 
+        function toggleLockVersion(index) {
+            recipes[currentRecipe].versions[index].locked = !recipes[currentRecipe].versions[index].locked;
+            saveRecipes();
+            renderVersionTabs();
+            renderIngredients();
+            updateIngredients();
+        }
+
         function renderVersionTabs() {
             console.log("Rendering version tabs for recipe:", recipes[currentRecipe].name, "with versions:", recipes[currentRecipe].versions);
             const tabsContainer = document.getElementById('versionTabs');
@@ -1408,6 +1453,12 @@
                 tab.addEventListener('touchcancel', () => clearTimeout(pressTimer));
 
                 tabsContainer.appendChild(tab);
+
+                const lockButton = document.createElement('button');
+                lockButton.className = `lock-button ${version.locked ? 'locked' : 'unlocked'}`;
+                lockButton.textContent = version.locked ? 'Unlock' : 'Lock';
+                lockButton.onclick = () => toggleLockVersion(index);
+                tabsContainer.appendChild(lockButton);
 
                 const deleteButton = document.createElement('button');
                 deleteButton.className = 'delete-tab subtab';
@@ -1535,6 +1586,13 @@
         function updateIngredients() {
             try {
                 console.log("updateIngredients called");
+                const version = recipes[currentRecipe].versions[currentVersion];
+                if (version.locked) {
+                    console.log("Version is locked, skipping updates");
+                    renderIngredients();
+                    return;
+                }
+
                 const batchSizeElement = document.getElementById('batchSize');
                 if (!batchSizeElement) throw new Error("Batch size element not found");
                 const batchSize = parseFloat(batchSizeElement.value);
@@ -1669,7 +1727,6 @@
             ];
             ws['!cols'] = colWidths;
 
-            // Style header row
             data[0].forEach((header, colIndex) => {
                 const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIndex });
                 if (!ws[cellRef]) ws[cellRef] = { t: 's', v: header };
@@ -1685,7 +1742,6 @@
                 };
             });
 
-            // Style data rows
             for (let row = 1; row < data.length; row++) {
                 for (let col = 0; col < data[row].length; col++) {
                     const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
@@ -1732,6 +1788,9 @@
                     importedRecipe.versions.forEach(version => {
                         if (!version.name || !version.batchSize || !version.ingredients || !Array.isArray(version.instructions)) {
                             throw new Error("Invalid version format: Missing required fields.");
+                        }
+                        if (version.locked === undefined) {
+                            version.locked = false;
                         }
                     });
 
@@ -1791,7 +1850,8 @@
                     batchSize: 5,
                     ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
                     instructions: JSON.parse(JSON.stringify(defaultInstructions)),
-                    notes: defaultNotes
+                    notes: defaultNotes,
+                    locked: false
                 }]
             });
             recipes.sort((a, b) => a.name.localeCompare(b.name));
@@ -1828,7 +1888,8 @@
                 batchSize: current.batchSize,
                 ingredients: JSON.parse(JSON.stringify(current.ingredients)),
                 instructions: JSON.parse(JSON.stringify(current.instructions)),
-                notes: current.notes
+                notes: current.notes,
+                locked: false
             });
             currentVersion = recipes[currentRecipe].versions.length - 1;
             saveRecipes();
@@ -1904,7 +1965,8 @@
                         batchSize: 5,
                         ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
                         instructions: JSON.parse(JSON.stringify(defaultInstructions)),
-                        notes: defaultNotes
+                        notes: defaultNotes,
+                        locked: false
                     }]
                 }];
                 categories = [
@@ -1933,7 +1995,8 @@
                     batchSize: 5,
                     ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
                     instructions: JSON.parse(JSON.stringify(defaultInstructions)),
-                    notes: defaultNotes
+                    notes: defaultNotes,
+                    locked: false
                 }];
                 currentVersion = 0;
                 saveRecipes();
