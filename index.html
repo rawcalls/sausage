@@ -520,7 +520,7 @@
             h1, #ingredientTable, .directions {
                 display: block;
             }
-            .category-tabs, .tabs-container, .inputglyph-section, #ingredients, .button-section, .modal {
+            .category-tabs, .tabs-container, .input-section, #ingredients, .button-section, .modal {
                 display: none;
             }
             .directions .reset-button, .edit-step, .delete-step {
@@ -755,9 +755,7 @@
                                 console.log("Invalid instructions detected, resetting to default");
                                 version.instructions = JSON.parse(JSON.stringify(defaultInstructions));
                             }
-                            if (version.locked === undefined) {
-                                version.locked = false;
-                            }
+                            version.locked = true; // Set all versions to locked
                         });
                     });
                 } else {
@@ -770,7 +768,7 @@
                             ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
                             instructions: JSON.parse(JSON.stringify(defaultInstructions)),
                             notes: defaultNotes,
-                            locked: false
+                            locked: true
                         }]
                     });
                 }
@@ -962,7 +960,7 @@
                     const fatRatio = ingredient.fatRatio !== undefined ? ingredient.fatRatio : 20;
                     ratioInput = `
                         <label>Lean/Fat Ratio:</label>
-                        <input type="text" id="ratio_${key}" value="${leanRatio}/${fatRatio}" style="width: 60px;" onchange="updateLeanFatRatio('${key}', this.value)">
+                        <input type="text" id="ratio_${key}" value="${leanRatio}/${fatRatio}" style="width: 60px;" onchange="updateLeanFatRatio('${key}', this.value)" ${isLocked ? 'disabled' : ''}>
                     `;
                 }
                 div.innerHTML = `
@@ -1789,9 +1787,7 @@
                         if (!version.name || !version.batchSize || !version.ingredients || !Array.isArray(version.instructions)) {
                             throw new Error("Invalid version format: Missing required fields.");
                         }
-                        if (version.locked === undefined) {
-                            version.locked = false;
-                        }
+                        version.locked = true; // Set imported versions to locked
                     });
 
                     let newRecipeName = importedRecipe.name;
@@ -1851,7 +1847,7 @@
                     ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
                     instructions: JSON.parse(JSON.stringify(defaultInstructions)),
                     notes: defaultNotes,
-                    locked: false
+                    locked: true
                 }]
             });
             recipes.sort((a, b) => a.name.localeCompare(b.name));
@@ -1889,7 +1885,7 @@
                 ingredients: JSON.parse(JSON.stringify(current.ingredients)),
                 instructions: JSON.parse(JSON.stringify(current.instructions)),
                 notes: current.notes,
-                locked: false
+                locked: true
             });
             currentVersion = recipes[currentRecipe].versions.length - 1;
             saveRecipes();
@@ -1966,7 +1962,7 @@
                         ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
                         instructions: JSON.parse(JSON.stringify(defaultInstructions)),
                         notes: defaultNotes,
-                        locked: false
+                        locked: true
                     }]
                 }];
                 categories = [
@@ -1996,7 +1992,7 @@
                     ingredients: JSON.parse(JSON.stringify(defaultIngredients)),
                     instructions: JSON.parse(JSON.stringify(defaultInstructions)),
                     notes: defaultNotes,
-                    locked: false
+                    locked: true
                 }];
                 currentVersion = 0;
                 saveRecipes();
